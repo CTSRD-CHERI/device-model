@@ -90,6 +90,7 @@ main(void)
 	beripic_init(&beripic_sc, &beripic1_res);
 	beripic_enable(&beripic_sc, 16, 0);
 
+	/* TODO */
 	status = mips_rd_status();
 	status |= ((1 << 2) << 8);
 	status |= MIPS_SR_INT_IE;
