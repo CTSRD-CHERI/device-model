@@ -1,0 +1,32 @@
+TARGET(elf64-tradbigmips)
+ENTRY(_start)
+
+SECTIONS
+{
+	. = 0xffffffffb0000000;
+	.start . : {
+		*start.o(.text)
+	}
+
+	.text : {
+		*(.exception)
+		*(.text)
+	}
+
+	.rodata : {
+		*(.rodata)
+	}
+
+	.data : {
+		*(.data)
+	}
+
+	.sdata : {
+		_gp = .;
+		*(.sdata)
+	}
+
+	.bss : {
+		*(.bss COMMON)
+	}
+}
