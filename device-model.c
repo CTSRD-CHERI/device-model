@@ -37,8 +37,8 @@
 #include <mips/beri/beripic.h>
 #include <dev/altera/jtag_uart.h>
 
-#include <machine/cpufunc.h>
 #include <machine/cpuregs.h>
+#include <machine/cpufunc.h>
 
 #include "device-model.h"
 
