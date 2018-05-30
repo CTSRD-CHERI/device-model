@@ -139,14 +139,13 @@ main(void)
 	*addr = 0x1515151515161617;
 
 	aju_init(&aju_sc, AJU1_BASE);
-
 	console_register(uart_putchar, (void *)&aju_sc);
 
-	beripic_init(&beripic_sc, &beripic1_res);
-	beripic_enable(&beripic_sc, 16, 0);
-
 	mips_install_intr_map(mips_intr_map);
+
+	beripic_init(&beripic_sc, &beripic1_res);
 	beripic_install_intr_map(&beripic_sc, beripic_intr_map);
+	beripic_enable(&beripic_sc, 16, 0);
 
 	status = mips_rd_status();
 	status |= MIPS_SR_IM_HARD(0);
