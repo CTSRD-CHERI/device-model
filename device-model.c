@@ -159,7 +159,6 @@ main(void)
 
 	while (1) {
 		printf("Hello World!\n");
-		//udelay(1000000);
 		usleep(1000000);
 	}
 
