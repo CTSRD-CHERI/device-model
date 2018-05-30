@@ -94,7 +94,7 @@ static const struct mips_intr_entry mips_intr_map[MIPS_N_INTR] = {
 	[4] = { hardintr, NULL },
 	[5] = { hardintr, NULL },
 	[6] = { hardintr, NULL },
-	[7] = { hardintr, NULL },
+	[7] = { mips_timer_intr, (void *)&timer_sc },
 };
 
 static const struct beripic_intr_entry beripic_intr_map[BERIPIC_NIRQS] = {
@@ -121,6 +121,13 @@ udelay(uint32_t usec)
 	mips_timer_udelay(&timer_sc, usec);
 }
 
+void
+usleep(uint32_t usec)
+{
+
+	mips_timer_usleep(&timer_sc, usec);
+}
+
 int
 main(void)
 {
@@ -143,6 +150,7 @@ main(void)
 
 	status = mips_rd_status();
 	status |= MIPS_SR_IM_HARD(0);
+	status |= MIPS_SR_IM_HARD(5);
 	status |= MIPS_SR_IE;
 	status &= ~MIPS_SR_BEV;
 	mips_wr_status(status);
@@ -151,7 +159,8 @@ main(void)
 
 	while (1) {
 		printf("Hello World!\n");
-		udelay(1000000);
+		//udelay(1000000);
+		usleep(1000000);
 	}
 
 	return (0);
