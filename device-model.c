@@ -33,13 +33,13 @@
 #include <sys/endian.h>
 #include <sys/systm.h>
 
-#include <mips/mips/timer.h>
-#include <mips/beri/beripic.h>
-#include <dev/altera/jtag_uart.h>
-
 #include <machine/frame.h>
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
+
+#include <mips/mips/timer.h>
+#include <mips/beri/beripic.h>
+#include <dev/altera/jtag_uart.h>
 
 #include <mips/mips/trap.h>
 
@@ -74,21 +74,31 @@ static void
 hardintr(void *arg, struct trapframe *frame, int i)
 {
 
-	printf("Hard interrupt %d\n", i);
+	printf("Unknown hard interrupt %d\n", i);
+}
 
-	if (i == 2)
-		reset();
+static void
+ipi_from_freebsd(void *arg)
+{
+
+	printf("%s: reset\n", __func__);
+
+	reset();
 }
 
 static const struct mips_intr_entry mips_intr_map[MIPS_N_INTR] = {
 	[0] = { softintr, NULL },
 	[1] = { softintr, NULL },
-	[2] = { hardintr, NULL },
+	[2] = { beripic_intr, (void *)&beripic_sc },
 	[3] = { hardintr, NULL },
 	[4] = { hardintr, NULL },
 	[5] = { hardintr, NULL },
 	[6] = { hardintr, NULL },
 	[7] = { hardintr, NULL },
+};
+
+static const struct beripic_intr_entry beripic_intr_map[BERIPIC_NIRQS] = {
+	[16] = { ipi_from_freebsd, NULL },
 };
 
 static void
@@ -129,6 +139,7 @@ main(void)
 	beripic_enable(&beripic_sc, 16, 0);
 
 	mips_install_intr_map(mips_intr_map);
+	beripic_install_intr_map(&beripic_sc, beripic_intr_map);
 
 	status = mips_rd_status();
 	status |= MIPS_SR_IM_HARD(0);
