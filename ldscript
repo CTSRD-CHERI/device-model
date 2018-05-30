@@ -8,6 +8,11 @@ SECTIONS
 		*start.o(.text)
 	}
 
+	. = 0xffffffffb0001000;
+	.exception . : {
+		*exception.o(.text)
+	}
+
 	.text : {
 		*(.exception)
 		*(.text)

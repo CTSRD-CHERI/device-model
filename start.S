@@ -56,16 +56,7 @@ ASM_ENTRY(_start)
 	jalr	t0
 	nop
 
-	.align 12
-ENTRY(MipsException)
-
-	save_registers
-
-	dla	t0, exception
-	jalr	t0
-	nop
-
-	restore_registers
+ENTRY(reset)
 
 	/* Reset */
 	dla	t0, (BERI_RESET_VECTOR | MIPS_XKPHYS_UNCACHED_BASE)
@@ -76,4 +67,4 @@ ENTRY(MipsException)
 1:
 	j	1b
 	nop
-END(MipsException)
+END(reset)

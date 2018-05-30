@@ -37,8 +37,11 @@
 #include <mips/beri/beripic.h>
 #include <dev/altera/jtag_uart.h>
 
+#include <machine/frame.h>
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
+
+#include <mips/mips/trap.h>
 
 #include "device-model.h"
 
@@ -52,6 +55,41 @@ struct beripic_resource beripic1_res = {
 static struct aju_softc aju_sc;
 static struct beripic_softc beripic_sc;
 static struct mips_timer_softc timer_sc;
+
+void reset(void);
+
+static void
+softintr(void *arg, struct trapframe *frame, int i)
+{
+	uint32_t cause;
+
+	printf("Soft interrupt %d\n", i);
+
+	cause = mips_rd_cause();
+	cause &= ~(1 << (8 + i));
+	mips_wr_cause(cause);
+};
+
+static void
+hardintr(void *arg, struct trapframe *frame, int i)
+{
+
+	printf("Hard interrupt %d\n", i);
+
+	if (i == 2)
+		reset();
+}
+
+static const struct mips_intr_entry mips_intr_map[MIPS_N_INTR] = {
+	[0] = { softintr, NULL },
+	[1] = { softintr, NULL },
+	[2] = { hardintr, NULL },
+	[3] = { hardintr, NULL },
+	[4] = { hardintr, NULL },
+	[5] = { hardintr, NULL },
+	[6] = { hardintr, NULL },
+	[7] = { hardintr, NULL },
+};
 
 static void
 uart_putchar(int c, void *arg)
@@ -89,6 +127,8 @@ main(void)
 
 	beripic_init(&beripic_sc, &beripic1_res);
 	beripic_enable(&beripic_sc, 16, 0);
+
+	mips_install_intr_map(mips_intr_map);
 
 	status = mips_rd_status();
 	status |= MIPS_SR_IM_HARD(0);
