@@ -39,3 +39,5 @@ clean:
 .include "${.CURDIR}/osfive/mk/user.mk"
 .include "${.CURDIR}/osfive/mk/compile.mk"
 .include "${.CURDIR}/osfive/mk/link.mk"
+.include "${.CURDIR}/osfive/mk/readelf.mk"
+.include "${.CURDIR}/osfive/mk/objdump.mk"
