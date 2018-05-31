@@ -56,6 +56,9 @@ static struct aju_softc aju_sc;
 static struct beripic_softc beripic_sc;
 static struct mips_timer_softc timer_sc;
 
+extern uint32_t _sbss;
+extern uint32_t _ebss;
+
 void reset(void);
 
 static void
@@ -128,11 +131,26 @@ usleep(uint32_t usec)
 	mips_timer_usleep(&timer_sc, usec);
 }
 
+static void
+clear_bss(void)
+{
+	uint32_t *sbss;
+	uint32_t *ebss;
+
+	sbss = (uint32_t *)&_sbss;
+	ebss = (uint32_t *)&_ebss;
+
+	while (sbss < ebss)
+		*sbss++ = 0;
+}
+
 int
 main(void)
 {
 	uint64_t *addr;
 	uint32_t status;
+
+	clear_bss();
 
 	/* Debug */
 	addr = (uint64_t *)0xffffffffb0800000;

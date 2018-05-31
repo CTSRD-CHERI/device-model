@@ -32,6 +32,8 @@ SECTIONS
 	}
 
 	.bss : {
+		_sbss = ABSOLUTE(.);
 		*(.bss COMMON)
+		_ebss = ABSOLUTE(.);
 	}
 }
