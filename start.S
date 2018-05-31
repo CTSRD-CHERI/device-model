@@ -29,7 +29,6 @@
  */
 
 #include <machine/regdef.h>
-#include <machine/cpufunc.h>
 #include <machine/cpuregs.h>
 #include <machine/asm.h>
 
