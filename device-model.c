@@ -59,8 +59,6 @@ static struct mips_timer_softc timer_sc;
 extern uint32_t _sbss;
 extern uint32_t _ebss;
 
-void reset(void);
-
 static void
 softintr(void *arg, struct trapframe *frame, int i)
 {
@@ -84,9 +82,9 @@ static void
 ipi_from_freebsd(void *arg)
 {
 
-	printf("%s: reset\n", __func__);
+	printf("%s: cpu_reset\n", __func__);
 
-	reset();
+	cpu_reset();
 }
 
 static const struct mips_intr_entry mips_intr_map[MIPS_N_INTR] = {
@@ -180,11 +178,4 @@ main(void)
 	}
 
 	return (0);
-}
-
-void
-exception(void)
-{
-
-	printf("Exception!\n");
 }

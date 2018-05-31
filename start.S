@@ -56,7 +56,7 @@ ASM_ENTRY(_start)
 	jalr	t0
 	nop
 
-ENTRY(reset)
+ENTRY(cpu_reset)
 
 	/* Reset */
 	dla	t0, (BERI_RESET_VECTOR | MIPS_XKPHYS_UNCACHED_BASE)
@@ -67,4 +67,4 @@ ENTRY(reset)
 1:
 	j	1b
 	nop
-END(reset)
+END(cpu_reset)

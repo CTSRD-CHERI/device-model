@@ -42,6 +42,6 @@
 
 #define	MIPS_DEFAULT_FREQ	100000000 /* 100 MHz */
 
-void exception(void);
+void cpu_reset(void);
 
 #endif	/* !_DEVICE_MODEL_H_ */
