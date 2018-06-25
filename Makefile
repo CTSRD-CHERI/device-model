@@ -15,10 +15,9 @@ OBJECTS =	device-model.o				\
 		osfive/sys/mips/mips/exception.o	\
 		osfive/sys/kern/subr_prf.o		\
 		osfive/sys/kern/subr_console.o		\
-		osfive/lib/libc/stdio/printf.o		\
-		osfive/lib/libc/string/bzero.o		\
-		osfive/lib/libc/string/strlen.o		\
 		start.o
+
+.include "osfive/lib/libc/Makefile.inc"
 
 CFLAGS =	-O -pipe -g -nostdinc -fno-pic -mno-abicalls -G0	\
 	-march=mips64 -mabi=64 -msoft-float -ffreestanding -fwrapv	\
