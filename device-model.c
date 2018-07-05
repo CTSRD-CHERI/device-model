@@ -39,7 +39,7 @@
 
 #include <mips/mips/timer.h>
 #include <mips/beri/beripic.h>
-#include <dev/altera/jtag_uart.h>
+#include <dev/altera/jtag_uart/jtag_uart.h>
 
 #include <mips/mips/trap.h>
 
