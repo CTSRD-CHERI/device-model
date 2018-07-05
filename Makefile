@@ -32,11 +32,8 @@ CFLAGS =	-O -pipe -g -nostdinc -fno-pic -mno-abicalls -G0	\
 
 all:	compile link binary
 
-clean:
-	rm -f ${OBJECTS:M*} ${APP}.elf ${APP}.bin
-
 .include "${.CURDIR}/osfive/mk/user.mk"
 .include "${.CURDIR}/osfive/mk/compile.mk"
 .include "${.CURDIR}/osfive/mk/link.mk"
-.include "${.CURDIR}/osfive/mk/readelf.mk"
-.include "${.CURDIR}/osfive/mk/objdump.mk"
+.include "${.CURDIR}/osfive/mk/binutils.mk"
+.include "${.CURDIR}/osfive/mk/clean.mk"
