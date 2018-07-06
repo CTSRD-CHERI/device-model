@@ -5,6 +5,11 @@ CC =		${CROSS_COMPILE}gcc
 LD =		${CROSS_COMPILE}ld
 OBJCOPY =	${CROSS_COMPILE}objcopy
 
+# Not ready
+# CC =         clang60
+# LD =         ld.lld60
+# OBJCOPY =    llvm-objcopy60
+
 LDSCRIPT =	${.CURDIR}/ldscript
 
 OBJECTS =	device-model.o					\
@@ -18,6 +23,9 @@ OBJECTS =	device-model.o					\
 		start.o
 
 .include "osfive/lib/libc/Makefile.inc"
+
+# Not ready
+# CFLAGS = -target mips64 -integrated-as
 
 CFLAGS =	-O -pipe -g -nostdinc -fno-pic -mno-abicalls -G0	\
 	-march=mips64 -mabi=64 -msoft-float -ffreestanding -fwrapv	\

@@ -49,6 +49,7 @@ ASM_ENTRY(_start)
 	sync
 	sync
 
+	dla	gp, _gp
 	dla	sp, 0xffffffffb0100000
 	nop
 	dla	t0, main
