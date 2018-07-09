@@ -18,7 +18,7 @@ OBJECTS =	device-model.o					\
 		osfive/sys/kern/subr_console.o			\
 		start.o
 
-.include "osfive/lib/libc/Makefile.inc"
+.include "${.CURDIR}/osfive/lib/libc/Makefile.inc"
 
 WARNFLAGS =			\
 	-Werror			\
