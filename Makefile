@@ -35,9 +35,9 @@ WARNFLAGS =			\
 	-Wno-pointer-sign	\
 	-Wmissing-include-dirs
 
-CFLAGS = -target mips64 -integrated-as -march=mips64 -mabi=64	\
-	-O -pipe -g -nostdinc -fno-pic -mno-abicalls -G0	\
-	-msoft-float -fwrapv -fno-builtin-printf ${WARNFLAGS}
+CFLAGS = -target mips64 -integrated-as -march=mips64 		\
+	-O -g -nostdinc -mno-abicalls -msoft-float		\
+	-fwrapv -fno-builtin-printf ${WARNFLAGS}
 
 all:	compile link binary
 
