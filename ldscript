@@ -1,4 +1,4 @@
-TARGET(elf64-tradbigmips)
+/* TARGET(elf64-tradbigmips) */
 ENTRY(_start)
 
 SECTIONS

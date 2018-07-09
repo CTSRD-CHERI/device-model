@@ -1,14 +1,9 @@
 APP =		device-model
 ARCH =		mips
 
-CC =		${CROSS_COMPILE}gcc
-LD =		${CROSS_COMPILE}ld
-OBJCOPY =	${CROSS_COMPILE}objcopy
-
-# Not ready
-# CC =         clang60
-# LD =         ld.lld60
-# OBJCOPY =    llvm-objcopy60
+CC =		clang-cheri
+LD =		ld.lld-cheri
+OBJCOPY =	llvm-objcopy-cheri
 
 LDSCRIPT =	${.CURDIR}/ldscript
 
@@ -25,19 +20,24 @@ OBJECTS =	device-model.o					\
 
 .include "osfive/lib/libc/Makefile.inc"
 
-# Not ready
-# CFLAGS = -target mips64 -integrated-as
+WARNFLAGS =			\
+	-Werror			\
+	-Wall			\
+	-Wmissing-prototypes	\
+	-Wredundant-decls	\
+	-Wnested-externs	\
+	-Wstrict-prototypes	\
+	-Wmissing-prototypes	\
+	-Wpointer-arith		\
+	-Winline		\
+	-Wcast-qual		\
+	-Wundef			\
+	-Wno-pointer-sign	\
+	-Wmissing-include-dirs
 
-CFLAGS =	-O -pipe -g -nostdinc -fno-pic -mno-abicalls -G0	\
-	-march=mips64 -mabi=64 -msoft-float -ffreestanding -fwrapv	\
-	-gdwarf-2 -fno-common -fms-extensions -finline-limit=8000	\
-	-std=iso9899:1999 -fno-builtin-printf				\
-	-Wall -Wredundant-decls -Wnested-externs			\
-	-Wstrict-prototypes -Wmissing-prototypes -Wpointer-arith	\
-	-Winline -Wcast-qual -Wundef -Wno-pointer-sign			\
-	-fformat-extensions -Wmissing-include-dirs			\
-	-fdiagnostics-show-option -Wno-unknown-pragmas			\
-	-Wno-uninitialized -Werror
+CFLAGS = -target mips64 -integrated-as -march=mips64 -mabi=64	\
+	-O -pipe -g -nostdinc -fno-pic -mno-abicalls -G0	\
+	-msoft-float -fwrapv -fno-builtin-printf ${WARNFLAGS}
 
 all:	compile link binary
 
