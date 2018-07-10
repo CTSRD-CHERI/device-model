@@ -39,11 +39,13 @@
 
 #include <mips/mips/timer.h>
 #include <mips/beri/beripic.h>
+#include <mips/beri/beri_epw.h>
 #include <dev/altera/jtag_uart/jtag_uart.h>
 
 #include <mips/mips/trap.h>
 
 #include "device-model.h"
+#include "emul_msgdma.h"
 
 struct beripic_resource beripic1_res = {
 	.cfg = BERIPIC1_CFG,
@@ -54,6 +56,7 @@ struct beripic_resource beripic1_res = {
 
 static struct aju_softc aju_sc;
 static struct beripic_softc beripic_sc;
+static struct epw_softc epw_sc;
 static struct mips_timer_softc timer_sc;
 
 extern uint32_t _sbss;
@@ -172,10 +175,9 @@ main(void)
 
 	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ);
 
-	while (1) {
-		printf("Hello World!\n");
-		usleep(1000000);
-	}
+	epw_init(&epw_sc, EPW_BASE);
+
+	emul_msgdma(&epw_sc);
 
 	return (0);
 }

@@ -28,21 +28,26 @@
  * SUCH DAMAGE.
  */
 
-#ifndef	_DEVICE_MODEL_H_
-#define	_DEVICE_MODEL_H_
+#include <sys/cdefs.h>
+#include <sys/systm.h>
 
-#define	AJU0_BASE		0x7f000000
-#define	AJU1_BASE		0x7f001000
-#define	AJU2_BASE		0x7f002000
-#define	EPW_BASE		0x00000000
+#include <mips/beri/beri_epw.h>
 
-#define	BERIPIC1_CFG		0x7f808000
-#define	BERIPIC1_IP_READ	0x7f80a000
-#define	BERIPIC1_IP_SET		0x7f80a080
-#define	BERIPIC1_IP_CLEAR	0x7f80a100
+#include "device-model.h"
+#include "emul_msgdma.h"
 
-#define	MIPS_DEFAULT_FREQ	100000000 /* 100 MHz */
+void
+emul_msgdma(struct epw_softc *sc)
+{
+	struct epw_request req;
 
-void cpu_reset(void);
+	while (1) {
+		printf("Hello World!\n");
 
-#endif	/* !_DEVICE_MODEL_H_ */
+		if (epw_request(sc, &req) != 0) {
+			/* TODO */
+		}
+
+		usleep(1000000);
+	}
+}

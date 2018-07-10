@@ -28,21 +28,9 @@
  * SUCH DAMAGE.
  */
 
-#ifndef	_DEVICE_MODEL_H_
-#define	_DEVICE_MODEL_H_
+#ifndef	_EMUL_MSGDMA_H_
+#define	_EMUL_MSGDMA_H_
 
-#define	AJU0_BASE		0x7f000000
-#define	AJU1_BASE		0x7f001000
-#define	AJU2_BASE		0x7f002000
-#define	EPW_BASE		0x00000000
+void emul_msgdma(struct epw_softc *sc);
 
-#define	BERIPIC1_CFG		0x7f808000
-#define	BERIPIC1_IP_READ	0x7f80a000
-#define	BERIPIC1_IP_SET		0x7f80a080
-#define	BERIPIC1_IP_CLEAR	0x7f80a100
-
-#define	MIPS_DEFAULT_FREQ	100000000 /* 100 MHz */
-
-void cpu_reset(void);
-
-#endif	/* !_DEVICE_MODEL_H_ */
+#endif	/* !_EMUL_MSGDMA_H_ */
