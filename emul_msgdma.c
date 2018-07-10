@@ -36,14 +36,42 @@
 #include "device-model.h"
 #include "emul_msgdma.h"
 
+#define EMUL_NDEVICES	2
+
+struct device_link {
+	uint64_t base_emul;
+	uint32_t size;
+	uint64_t base;
+};
+
+struct device_link device_map[EMUL_NDEVICES] = {
+	{ 0x0000, 0x40, MSGDMA0_BASE },
+	{ 0x0040, 0x40, MSGDMA1_BASE },
+};
+
+static void
+emul_request_device(struct device_link *link, struct epw_softc *sc,
+    struct epw_request *req)
+{
+
+	/* TODO: forward the request to the real hardware */
+}
+
 static void
 emul_request(struct epw_softc *sc, struct epw_request *req)
 {
+	struct device_link *link;
 	uint64_t offset;
+	int i;
 
 	offset = req->addr - EPW_BASE;
 
-	/* TODO: forward the request to the real hardware */
+	for (i = 0; i < EMUL_NDEVICES; i++) {
+		link = &device_map[i];
+		if (offset >= link->base_emul &&
+		    offset < (link->base_emul + link->size))
+			emul_request_device(link, sc, req);
+	}
 }
 
 void
