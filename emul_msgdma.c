@@ -36,6 +36,16 @@
 #include "device-model.h"
 #include "emul_msgdma.h"
 
+static void
+emul_request(struct epw_softc *sc, struct epw_request *req)
+{
+	uint64_t offset;
+
+	offset = req->addr - EPW_BASE;
+
+	/* TODO: forward the request to the real hardware */
+}
+
 void
 emul_msgdma(struct epw_softc *sc)
 {
@@ -44,9 +54,8 @@ emul_msgdma(struct epw_softc *sc)
 	while (1) {
 		printf("Hello World!\n");
 
-		if (epw_request(sc, &req) != 0) {
-			/* TODO */
-		}
+		if (epw_request(sc, &req) != 0)
+			emul_request(sc, &req);
 
 		usleep(1000000);
 	}
