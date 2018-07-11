@@ -44,11 +44,50 @@ const struct device_link device_map[EMUL_NDEVICES] = {
 };
 
 static void
+emul_forward(struct epw_softc *sc, struct epw_request *req,
+    uint64_t addr)
+{
+	void *src, *dst;
+	int len;
+
+	if (req->is_write) {
+		src = &req->data;
+		dst = (void *)addr;
+		len = req->byte_enable;
+	} else {
+		src = (void *)addr;
+		dst = &req->data;
+		len = req->burst_count;
+	}
+
+	switch (len) {
+	case 1:
+		*(volatile uint8_t *)dst = *(volatile uint8_t *)src;
+		break;
+	case 2:
+		*(volatile uint16_t *)dst = *(volatile uint16_t *)src;
+		break;
+	case 4:
+		*(volatile uint32_t *)dst = *(volatile uint32_t *)src;
+		break;
+	case 8:
+		*(volatile uint64_t *)dst = *(volatile uint64_t *)src;
+		break;
+	}
+}
+
+static void
 emul_request_device(const struct device_link *link,
     struct epw_softc *sc, struct epw_request *req)
 {
+	uint64_t offset;
+	uint64_t addr;
 
-	/* TODO: forward the request to the real hardware */
+	offset = req->addr - link->base_emul - EPW_BASE;
+	addr = link->base + offset;
+
+	emul_forward(sc, req, addr);
+	epw_reply(sc, req);
 }
 
 static void
