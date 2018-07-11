@@ -15,6 +15,7 @@ OBJECTS =	device-model.o					\
 		osfive/sys/mips/mips/timer.o			\
 		osfive/sys/mips/mips/trap.o			\
 		osfive/sys/mips/mips/exception.o		\
+		osfive/sys/kern/kern_panic.o			\
 		osfive/sys/kern/subr_prf.o			\
 		osfive/sys/kern/subr_console.o			\
 		start.o
