@@ -33,4 +33,10 @@
 
 void emul_msgdma(struct epw_softc *sc);
 
+struct device_link {
+	uint64_t base_emul;
+	uint32_t size;
+	uint64_t base;
+};
+
 #endif	/* !_EMUL_MSGDMA_H_ */

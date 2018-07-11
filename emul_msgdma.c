@@ -38,20 +38,14 @@
 
 #define EMUL_NDEVICES	2
 
-struct device_link {
-	uint64_t base_emul;
-	uint32_t size;
-	uint64_t base;
-};
-
-struct device_link device_map[EMUL_NDEVICES] = {
+const struct device_link device_map[EMUL_NDEVICES] = {
 	{ 0x0000, 0x40, MSGDMA0_BASE },
 	{ 0x0040, 0x40, MSGDMA1_BASE },
 };
 
 static void
-emul_request_device(struct device_link *link, struct epw_softc *sc,
-    struct epw_request *req)
+emul_request_device(const struct device_link *link,
+    struct epw_softc *sc, struct epw_request *req)
 {
 
 	/* TODO: forward the request to the real hardware */
@@ -60,7 +54,7 @@ emul_request_device(struct device_link *link, struct epw_softc *sc,
 static void
 emul_request(struct epw_softc *sc, struct epw_request *req)
 {
-	struct device_link *link;
+	const struct device_link *link;
 	uint64_t offset;
 	int i;
 
