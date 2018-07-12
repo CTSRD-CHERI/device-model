@@ -8,8 +8,8 @@ OBJCOPY =	llvm-objcopy-cheri
 LDSCRIPT =	${.CURDIR}/ldscript
 
 OBJECTS =	device-model.o					\
-		dm.o						\
 		fwd_device.o					\
+		main.o						\
 		osfive/sys/dev/altera/jtag_uart/jtag_uart.o	\
 		osfive/sys/mips/beri/beripic.o			\
 		osfive/sys/mips/beri/beri_epw.o			\
