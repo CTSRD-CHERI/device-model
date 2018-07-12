@@ -48,4 +48,13 @@
 
 void cpu_reset(void);
 
+void dm_loop(struct epw_softc *sc);
+
+struct device_link {
+	uint64_t base_emul;
+	uint32_t size;
+	uint64_t base;
+	void (*request)(const struct device_link *link, struct epw_softc *sc, struct epw_request *req);
+};
+
 #endif	/* !_DEVICE_MODEL_H_ */

@@ -34,17 +34,10 @@
 #include <mips/beri/beri_epw.h>
 
 #include "device-model.h"
-#include "emul_msgdma.h"
-
-#define EMUL_NDEVICES	2
-
-const struct device_link device_map[EMUL_NDEVICES] = {
-	{ 0x0000, 0x40, MSGDMA0_BASE },
-	{ 0x0040, 0x40, MSGDMA1_BASE },
-};
+#include "fwd_device.h"
 
 static void
-emul_forward(struct epw_softc *sc, struct epw_request *req,
+fwd_rw(struct epw_softc *sc, struct epw_request *req,
     uint64_t addr)
 {
 	void *src, *dst;
@@ -76,8 +69,8 @@ emul_forward(struct epw_softc *sc, struct epw_request *req,
 	}
 }
 
-static void
-emul_request_device(const struct device_link *link,
+void
+fwd_request(const struct device_link *link,
     struct epw_softc *sc, struct epw_request *req)
 {
 	uint64_t offset;
@@ -86,38 +79,5 @@ emul_request_device(const struct device_link *link,
 	offset = req->addr - link->base_emul - EPW_BASE;
 	addr = link->base + offset;
 
-	emul_forward(sc, req, addr);
-	epw_reply(sc, req);
-}
-
-static void
-emul_request(struct epw_softc *sc, struct epw_request *req)
-{
-	const struct device_link *link;
-	uint64_t offset;
-	int i;
-
-	offset = req->addr - EPW_BASE;
-
-	for (i = 0; i < EMUL_NDEVICES; i++) {
-		link = &device_map[i];
-		if (offset >= link->base_emul &&
-		    offset < (link->base_emul + link->size))
-			emul_request_device(link, sc, req);
-	}
-}
-
-void
-emul_msgdma(struct epw_softc *sc)
-{
-	struct epw_request req;
-
-	while (1) {
-		printf("Hello World!\n");
-
-		if (epw_request(sc, &req) != 0)
-			emul_request(sc, &req);
-
-		usleep(1000000);
-	}
+	fwd_rw(sc, req, addr);
 }

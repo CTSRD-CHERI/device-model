@@ -45,7 +45,7 @@
 #include <mips/mips/trap.h>
 
 #include "device-model.h"
-#include "emul_msgdma.h"
+#include "fwd_device.h"
 
 struct beripic_resource beripic1_res = {
 	.cfg = BERIPIC1_CFG,
@@ -177,7 +177,7 @@ main(void)
 
 	epw_init(&epw_sc, EPW_BASE);
 
-	emul_msgdma(&epw_sc);
+	dm_loop(&epw_sc);
 
 	return (0);
 }
