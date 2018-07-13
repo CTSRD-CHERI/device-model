@@ -36,40 +36,52 @@
 #include "device-model.h"
 #include "fwd_device.h"
 
-#define DM_NDEVICES	2
+#define DM_NDEVICES	4
 
-const struct device_link device_map[DM_NDEVICES] = {
-	{ 0x0000, 0x40, MSGDMA0_BASE, fwd_request },
-	{ 0x0040, 0x40, MSGDMA1_BASE, fwd_request },
+const struct fwd_device_link device_map[DM_NDEVICES] = {
+	{ 0x0000, 0x20, MSGDMA0_BASE_CSR,  fwd_request },
+	{ 0x0020, 0x20, MSGDMA0_BASE_DESC, fwd_request },
+	{ 0x0040, 0x20, MSGDMA1_BASE_CSR,  fwd_request },
+	{ 0x0060, 0x20, MSGDMA1_BASE_DESC, fwd_request },
 };
 
-static void
+static int
 dm_request(struct epw_softc *sc, struct epw_request *req)
 {
-	const struct device_link *link;
+	const struct fwd_device_link *link;
 	uint64_t offset;
 	int i;
 
 	offset = req->addr - EPW_BASE;
 
+	/* Check if this is forwarding request */
 	for (i = 0; i < DM_NDEVICES; i++) {
 		link = &device_map[i];
 		if (offset >= link->base_emul &&
-		    offset < (link->base_emul + link->size))
+		    offset < (link->base_emul + link->size)) {
 			link->request(link, sc, req);
+			return (0);
+		}
 	}
+
+	/* Check if this is emulation request */
+
+	/* TODO */
+
+	return (-1);
 }
 
 void
 dm_loop(struct epw_softc *sc)
 {
 	struct epw_request req;
+	int ret;
 
 	while (1) {
 		printf("Hello World!\n");
 
 		if (epw_request(sc, &req) != 0) {
-			dm_request(sc, &req);
+			ret = dm_request(sc, &req);
 			epw_reply(sc, &req);
 		}
 

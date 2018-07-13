@@ -35,9 +35,16 @@
 #define	AJU1_BASE		0x7f001000
 #define	AJU2_BASE		0x7f002000
 #define	EPW_BASE		0x00000000
-#define	MSGDMA0_BASE		0x80004080
-#define	MSGDMA1_BASE		0x80004000
-#define	MSGDMA_MMAP_SIZE	0x40
+
+#define	MSGDMA0_BASE_CSR	0x80004080
+#define	MSGDMA0_BASE_DESC	0x800040a0
+#define	MSGDMA1_BASE_CSR	0x80004000
+#define	MSGDMA1_BASE_DESC	0x80004020
+
+#define	FIFO0_BASE_MEM		0x7f007400
+#define	FIFO0_BASE_CTRL		0x7f007420
+#define	FIFO1_BASE_MEM		0x7f007500
+#define	FIFO1_BASE_CTRL		0x7f007520
 
 #define	BERIPIC1_CFG		0x7f808000
 #define	BERIPIC1_IP_READ	0x7f80a000
@@ -49,12 +56,5 @@
 void cpu_reset(void);
 
 void dm_loop(struct epw_softc *sc);
-
-struct device_link {
-	uint64_t base_emul;
-	uint32_t size;
-	uint64_t base;
-	void (*request)(const struct device_link *link, struct epw_softc *sc, struct epw_request *req);
-};
 
 #endif	/* !_DEVICE_MODEL_H_ */

@@ -28,18 +28,17 @@
  * SUCH DAMAGE.
  */
 
-#ifndef	_FWD_DEVICE_H_
-#define	_FWD_DEVICE_H_
+#include <sys/cdefs.h>
+#include <sys/systm.h>
 
-struct fwd_device_link {
-	uint64_t base_emul;
-	uint32_t size;
-	uint64_t base;
-	void (*request)(const struct fwd_device_link *link,
-	    struct epw_softc *sc, struct epw_request *req);
-};
+#include <mips/beri/beri_epw.h>
 
-void fwd_request(const struct fwd_device_link *link,
-    struct epw_softc *sc, struct epw_request *req);
+#include "device-model.h"
+#include "emul_msgdma.h"
 
-#endif	/* !_FWD_DEVICE_H_ */
+void
+emul_msgdma(struct epw_softc *sc, struct epw_request *req)
+{
+
+	/* TODO */
+}
