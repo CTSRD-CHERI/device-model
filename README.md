@@ -4,7 +4,7 @@ This application emulates various devices on CHERI platform.
 
 CHERI CPU used by this application is synthesized on Altera FPGA and prototyped on Altera DE4 board.
 
-This is bare-metal software, i.e. it runs on a dedicates CPU core of CHERI processor.
+This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI processor.
 
 ### Build under FreeBSD
 
