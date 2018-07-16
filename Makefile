@@ -45,6 +45,9 @@ CFLAGS = -target mips64 -integrated-as -march=mips64 		\
 
 all:	compile link binary
 
+llvm-objdump:
+	llvm-objdump-cheri -d ${APP}.elf | less
+
 .include "${.CURDIR}/osfive/mk/user.mk"
 .include "${.CURDIR}/osfive/mk/compile.mk"
 .include "${.CURDIR}/osfive/mk/link.mk"
