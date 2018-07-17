@@ -40,15 +40,15 @@
 #define	DM_FWD_NDEVICES		4
 #define	DM_EMUL_NDEVICES	4
 
+struct msgdma_softc msgdma0_sc;
+struct msgdma_softc msgdma1_sc;
+
 const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
 	{ 0x0000, 0x20, MSGDMA0_BASE_CSR,  fwd_request },	/* Control Status Register */
 	{ 0x0020, 0x20, MSGDMA0_BASE_DESC, fwd_request },	/* Prefetcher */
 	{ 0x0040, 0x20, MSGDMA1_BASE_CSR,  fwd_request },	/* Control Status Register */
 	{ 0x0060, 0x20, MSGDMA1_BASE_DESC, fwd_request },	/* Prefetcher */
 };
-
-struct msgdma_softc msgdma0_sc;
-struct msgdma_softc msgdma1_sc;
 
 const struct emul_link emul_map[DM_EMUL_NDEVICES] = {
 	{ 0x1000, 0x20, emul_msgdma, &msgdma0_sc, MSGDMA_CSR },
@@ -78,7 +78,7 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 	}
 
 	/* Check if this is emulation request */
-	for (i = 0; i < DM_FWD_NDEVICES; i++) {
+	for (i = 0; i < DM_EMUL_NDEVICES; i++) {
 		elink = &emul_map[i];
 		if (offset >= elink->base_emul &&
 		    offset < (elink->base_emul + elink->size)) {
@@ -88,6 +88,16 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 	}
 
 	return (-1);
+}
+
+void
+dm_init(void)
+{
+
+	msgdma0_sc.fifo_base_mem = FIFO0_BASE_MEM;
+	msgdma0_sc.fifo_base_ctrl = FIFO0_BASE_CTRL;
+	msgdma1_sc.fifo_base_mem = FIFO1_BASE_MEM;
+	msgdma1_sc.fifo_base_ctrl = FIFO1_BASE_CTRL;
 }
 
 void

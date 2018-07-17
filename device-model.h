@@ -56,5 +56,6 @@
 void cpu_reset(void);
 
 void dm_loop(struct epw_softc *sc);
+void dm_init(void);
 
 #endif	/* !_DEVICE_MODEL_H_ */

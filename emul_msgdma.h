@@ -38,6 +38,8 @@ enum msgdma_device_type {
 
 struct msgdma_softc {
 	uint32_t state;
+	uint64_t fifo_base_mem;
+	uint64_t fifo_base_ctrl;
 };
 
 struct emul_link {
