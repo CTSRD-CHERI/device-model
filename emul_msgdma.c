@@ -32,14 +32,47 @@
 #include <sys/systm.h>
 
 #include <mips/beri/beri_epw.h>
+#include <dev/altera/msgdma/msgdma.h>
 
 #include "device-model.h"
 #include "emul_msgdma.h"
+
+static void
+csr_rw(uint64_t offset, struct epw_request *req)
+{
+
+	switch (offset) {
+	case DMA_STATUS:
+		break;
+	case DMA_CONTROL:
+		break;
+	};
+}
+
+static void
+pf_rw(uint64_t offset, struct epw_request *req)
+{
+
+	switch (offset) {
+	case PF_CONTROL:
+	case PF_NEXT_LO:
+	case PF_NEXT_HI:
+	case PF_POLL_FREQ:
+	case PF_STATUS:
+		break;
+	};
+}
 
 void
 emul_msgdma(const struct emul_link *elink, struct epw_softc *sc,
     struct epw_request *req)
 {
+	uint64_t offset;
 
-	/* TODO */
+	offset = req->addr - elink->base_emul - EPW_BASE;
+
+	if (elink->type == MSGDMA_CSR)
+		csr_rw(offset, req);
+	else
+		pf_rw(offset, req);
 }
