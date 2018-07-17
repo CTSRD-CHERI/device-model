@@ -31,6 +31,25 @@
 #ifndef	_EMUL_DEVICE_H_
 #define	_EMUL_DEVICE_H_
 
-void emul_msgdma(struct epw_softc *sc, struct epw_request *req);
+enum msgdma_device_type {
+	MSGDMA_CSR,
+	MSGDMA_PF,
+};
+
+struct msgdma_softc {
+	uint32_t state;
+};
+
+struct emul_link {
+	uint64_t base_emul;
+	uint32_t size;
+	void (*request)(const struct emul_link *elink,
+	    struct epw_softc *sc, struct epw_request *req);
+	void *arg;
+	enum msgdma_device_type type;
+};
+
+void emul_msgdma(const struct emul_link *elink,
+    struct epw_softc *sc, struct epw_request *req);
 
 #endif	/* !_EMUL_DEVICE_H_ */

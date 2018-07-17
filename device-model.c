@@ -35,38 +35,57 @@
 
 #include "device-model.h"
 #include "fwd_device.h"
+#include "emul_msgdma.h"
 
-#define DM_NDEVICES	4
+#define	DM_FWD_NDEVICES		4
+#define	DM_EMUL_NDEVICES	4
 
-const struct fwd_device_link device_map[DM_NDEVICES] = {
-	{ 0x0000, 0x20, MSGDMA0_BASE_CSR,  fwd_request },
-	{ 0x0020, 0x20, MSGDMA0_BASE_DESC, fwd_request },
-	{ 0x0040, 0x20, MSGDMA1_BASE_CSR,  fwd_request },
-	{ 0x0060, 0x20, MSGDMA1_BASE_DESC, fwd_request },
+const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
+	{ 0x0000, 0x20, MSGDMA0_BASE_CSR,  fwd_request },	/* Control Status Register */
+	{ 0x0020, 0x20, MSGDMA0_BASE_DESC, fwd_request },	/* Prefetcher */
+	{ 0x0040, 0x20, MSGDMA1_BASE_CSR,  fwd_request },	/* Control Status Register */
+	{ 0x0060, 0x20, MSGDMA1_BASE_DESC, fwd_request },	/* Prefetcher */
+};
+
+struct msgdma_softc msgdma0_sc;
+struct msgdma_softc msgdma1_sc;
+
+const struct emul_link emul_map[DM_EMUL_NDEVICES] = {
+	{ 0x1000, 0x20, emul_msgdma, &msgdma0_sc, MSGDMA_CSR },
+	{ 0x1020, 0x20, emul_msgdma, &msgdma0_sc, MSGDMA_PF  },
+	{ 0x1040, 0x20, emul_msgdma, &msgdma1_sc, MSGDMA_CSR },
+	{ 0x1060, 0x20, emul_msgdma, &msgdma1_sc, MSGDMA_PF  },
 };
 
 static int
 dm_request(struct epw_softc *sc, struct epw_request *req)
 {
-	const struct fwd_device_link *link;
+	const struct fwd_link *flink;
+	const struct emul_link *elink;
 	uint64_t offset;
 	int i;
 
 	offset = req->addr - EPW_BASE;
 
 	/* Check if this is forwarding request */
-	for (i = 0; i < DM_NDEVICES; i++) {
-		link = &device_map[i];
-		if (offset >= link->base_emul &&
-		    offset < (link->base_emul + link->size)) {
-			link->request(link, sc, req);
+	for (i = 0; i < DM_FWD_NDEVICES; i++) {
+		flink = &fwd_map[i];
+		if (offset >= flink->base_emul &&
+		    offset < (flink->base_emul + flink->size)) {
+			flink->request(flink, sc, req);
 			return (0);
 		}
 	}
 
 	/* Check if this is emulation request */
-
-	/* TODO */
+	for (i = 0; i < DM_FWD_NDEVICES; i++) {
+		elink = &emul_map[i];
+		if (offset >= elink->base_emul &&
+		    offset < (elink->base_emul + elink->size)) {
+			elink->request(elink, sc, req);
+			return (0);
+		}
+	}
 
 	return (-1);
 }

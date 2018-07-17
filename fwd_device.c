@@ -70,7 +70,7 @@ fwd_rw(struct epw_softc *sc, struct epw_request *req,
 }
 
 void
-fwd_request(const struct fwd_device_link *link,
+fwd_request(const struct fwd_link *link,
     struct epw_softc *sc, struct epw_request *req)
 {
 	uint64_t offset;

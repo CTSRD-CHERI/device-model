@@ -37,7 +37,8 @@
 #include "emul_msgdma.h"
 
 void
-emul_msgdma(struct epw_softc *sc, struct epw_request *req)
+emul_msgdma(const struct emul_link *elink, struct epw_softc *sc,
+    struct epw_request *req)
 {
 
 	/* TODO */

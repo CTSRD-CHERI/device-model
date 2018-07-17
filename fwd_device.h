@@ -31,15 +31,15 @@
 #ifndef	_FWD_DEVICE_H_
 #define	_FWD_DEVICE_H_
 
-struct fwd_device_link {
+struct fwd_link {
 	uint64_t base_emul;
 	uint32_t size;
 	uint64_t base;
-	void (*request)(const struct fwd_device_link *link,
+	void (*request)(const struct fwd_link *link,
 	    struct epw_softc *sc, struct epw_request *req);
 };
 
-void fwd_request(const struct fwd_device_link *link,
+void fwd_request(const struct fwd_link *link,
     struct epw_softc *sc, struct epw_request *req);
 
 #endif	/* !_FWD_DEVICE_H_ */
