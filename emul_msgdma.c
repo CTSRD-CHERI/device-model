@@ -38,7 +38,7 @@
 #include "emul_msgdma.h"
 
 static void
-csr_rw(uint64_t offset, struct epw_request *req)
+csr_r(uint64_t offset, struct epw_request *req)
 {
 
 	switch (offset) {
@@ -50,7 +50,33 @@ csr_rw(uint64_t offset, struct epw_request *req)
 }
 
 static void
-pf_rw(uint64_t offset, struct epw_request *req)
+csr_w(uint64_t offset, struct epw_request *req)
+{
+
+	switch (offset) {
+	case DMA_STATUS:
+		break;
+	case DMA_CONTROL:
+		break;
+	};
+}
+
+static void
+pf_r(uint64_t offset, struct epw_request *req)
+{
+
+	switch (offset) {
+	case PF_CONTROL:
+	case PF_NEXT_LO:
+	case PF_NEXT_HI:
+	case PF_POLL_FREQ:
+	case PF_STATUS:
+		break;
+	};
+}
+
+static void
+pf_w(uint64_t offset, struct epw_request *req)
 {
 
 	switch (offset) {
@@ -72,7 +98,13 @@ emul_msgdma(const struct emul_link *elink, struct epw_softc *sc,
 	offset = req->addr - elink->base_emul - EPW_BASE;
 
 	if (elink->type == MSGDMA_CSR)
-		csr_rw(offset, req);
+		if (req->is_write)
+			csr_w(offset, req);
+		else
+			csr_r(offset, req);
 	else
-		pf_rw(offset, req);
+		if (req->is_write)
+			pf_w(offset, req);
+		else
+			pf_r(offset, req);
 }
