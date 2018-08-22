@@ -34,7 +34,8 @@
 #define	AJU0_BASE		0x7f000000
 #define	AJU1_BASE		0x7f001000
 #define	AJU2_BASE		0x7f002000
-#define	EPW_BASE		0x00000000
+#define	EPW_BASE		0x7ff00000	/* Control interface */
+#define	EPW_WINDOW		0x7fb00000	/* Virtual device */
 
 #define	MSGDMA0_BASE_CSR	0x80004080
 #define	MSGDMA0_BASE_DESC	0x800040a0
