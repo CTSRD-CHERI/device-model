@@ -176,6 +176,7 @@ main(void)
 	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ);
 
 	epw_init(&epw_sc, EPW_BASE, EPW_WINDOW);
+	epw_control(&epw_sc, 1);
 
 	dm_loop(&epw_sc);
 
