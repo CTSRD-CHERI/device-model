@@ -40,6 +40,8 @@ struct msgdma_softc {
 	uint32_t state;
 	uint64_t fifo_base_mem;
 	uint64_t fifo_base_ctrl;
+	uint32_t pf_next_lo;
+	uint32_t pf_next_hi;
 };
 
 struct emul_link {

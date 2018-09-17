@@ -38,7 +38,8 @@
 #include "emul_msgdma.h"
 
 static void
-csr_r(uint64_t offset, struct epw_request *req)
+csr_r(struct msgdma_softc *sc, struct epw_request *req,
+    uint64_t offset)
 {
 
 	switch (offset) {
@@ -52,7 +53,8 @@ csr_r(uint64_t offset, struct epw_request *req)
 }
 
 static void
-csr_w(uint64_t offset, uint64_t val, struct epw_request *req)
+csr_w(struct msgdma_softc *sc, struct epw_request *req,
+    uint64_t offset, uint64_t val)
 {
 
 	switch (offset) {
@@ -66,7 +68,8 @@ csr_w(uint64_t offset, uint64_t val, struct epw_request *req)
 }
 
 static void
-pf_r(uint64_t offset, struct epw_request *req)
+pf_r(struct msgdma_softc *sc, struct epw_request *req,
+    uint64_t offset)
 {
 
 	switch (offset) {
@@ -75,9 +78,11 @@ pf_r(uint64_t offset, struct epw_request *req)
 		break;
 	case PF_NEXT_LO:
 		printf("%s: PF_NEXT_LO\n", __func__);
+		bcopy((void *)&sc->pf_next_lo, (void *)req->data, 4);
 		break;
 	case PF_NEXT_HI:
 		printf("%s: PF_NEXT_HI\n", __func__);
+		bcopy(&sc->pf_next_hi, req->data, 4);
 		break;
 	case PF_POLL_FREQ:
 		printf("%s: PF_POLL_FREQ\n", __func__);
@@ -89,7 +94,8 @@ pf_r(uint64_t offset, struct epw_request *req)
 }
 
 static void
-pf_w(uint64_t offset, uint64_t val, struct epw_request *req)
+pf_w(struct msgdma_softc *sc, struct epw_request *req,
+    uint64_t offset, uint64_t val)
 {
 
 	switch (offset) {
@@ -98,9 +104,11 @@ pf_w(uint64_t offset, uint64_t val, struct epw_request *req)
 		break;
 	case PF_NEXT_LO:
 		printf("%s: PF_NEXT_LO val %lx\n", __func__, val);
+		sc->pf_next_lo = val;
 		break;
 	case PF_NEXT_HI:
 		printf("%s: PF_NEXT_HI val %lx\n", __func__, val);
+		sc->pf_next_hi = val;
 		break;
 	case PF_POLL_FREQ:
 		printf("%s: PF_POLL_FREQ val %lx\n", __func__, val);
@@ -112,11 +120,14 @@ pf_w(uint64_t offset, uint64_t val, struct epw_request *req)
 }
 
 void
-emul_msgdma(const struct emul_link *elink, struct epw_softc *sc,
+emul_msgdma(const struct emul_link *elink, struct epw_softc *epw_sc,
     struct epw_request *req)
 {
+	struct msgdma_softc *sc;
 	uint64_t offset;
 	uint64_t val;
+
+	sc = elink->arg;
 
 	offset = req->addr - elink->base_emul - EPW_WINDOW;
 
@@ -139,12 +150,12 @@ emul_msgdma(const struct emul_link *elink, struct epw_softc *sc,
 
 	if (elink->type == MSGDMA_CSR)
 		if (req->is_write)
-			csr_w(offset, val, req);
+			csr_w(sc, req, offset, val);
 		else
-			csr_r(offset, req);
+			csr_r(sc, req, offset);
 	else
 		if (req->is_write)
-			pf_w(offset, val, req);
+			pf_w(sc, req, offset, val);
 		else
-			pf_r(offset, req);
+			pf_r(sc, req, offset);
 }
