@@ -51,10 +51,10 @@ const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
 };
 
 const struct emul_link emul_map[DM_EMUL_NDEVICES] = {
-	{ 0x1000, 0x20, emul_msgdma, &msgdma0_sc, MSGDMA_CSR },
-	{ 0x1020, 0x20, emul_msgdma, &msgdma0_sc, MSGDMA_PF  },
-	{ 0x1040, 0x20, emul_msgdma, &msgdma1_sc, MSGDMA_CSR },
-	{ 0x1060, 0x20, emul_msgdma, &msgdma1_sc, MSGDMA_PF  },
+	{ 0x4080, 0x20, emul_msgdma, &msgdma0_sc, MSGDMA_CSR },
+	{ 0x40a0, 0x20, emul_msgdma, &msgdma0_sc, MSGDMA_PF  },
+	{ 0x4000, 0x20, emul_msgdma, &msgdma1_sc, MSGDMA_CSR },
+	{ 0x4020, 0x20, emul_msgdma, &msgdma1_sc, MSGDMA_PF  },
 };
 
 static int
@@ -65,7 +65,7 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 	uint64_t offset;
 	int i;
 
-	offset = req->addr - EPW_BASE;
+	offset = req->addr - EPW_WINDOW;
 
 	/* Check if this is forwarding request */
 	for (i = 0; i < DM_FWD_NDEVICES; i++) {
@@ -106,14 +106,14 @@ dm_loop(struct epw_softc *sc)
 	struct epw_request req;
 	int ret;
 
-	while (1) {
-		printf("Hello World!\n");
+	printf("Hello World!\n");
 
+	while (1) {
 		if (epw_request(sc, &req) != 0) {
 			ret = dm_request(sc, &req);
 			epw_reply(sc, &req);
 		}
 
-		usleep(1000000);
+		usleep(100000);
 	}
 }

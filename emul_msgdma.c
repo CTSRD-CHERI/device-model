@@ -43,20 +43,24 @@ csr_r(uint64_t offset, struct epw_request *req)
 
 	switch (offset) {
 	case DMA_STATUS:
+		printf("%s: DMA_STATUS\n", __func__);
 		break;
 	case DMA_CONTROL:
+		printf("%s: DMA_CONTROL\n", __func__);
 		break;
 	};
 }
 
 static void
-csr_w(uint64_t offset, struct epw_request *req)
+csr_w(uint64_t offset, uint64_t val, struct epw_request *req)
 {
 
 	switch (offset) {
 	case DMA_STATUS:
+		printf("%s: DMA_STATUS, val %x\n", __func__, val);
 		break;
 	case DMA_CONTROL:
+		printf("%s: DMA_CONTROL, val %x\n", __func__, val);
 		break;
 	};
 }
@@ -67,24 +71,42 @@ pf_r(uint64_t offset, struct epw_request *req)
 
 	switch (offset) {
 	case PF_CONTROL:
+		printf("%s: PF_CONTROL\n", __func__);
+		break;
 	case PF_NEXT_LO:
+		printf("%s: PF_NEXT_LO\n", __func__);
+		break;
 	case PF_NEXT_HI:
+		printf("%s: PF_NEXT_HI\n", __func__);
+		break;
 	case PF_POLL_FREQ:
+		printf("%s: PF_POLL_FREQ\n", __func__);
+		break;
 	case PF_STATUS:
+		printf("%s: PF_STATUS\n", __func__);
 		break;
 	};
 }
 
 static void
-pf_w(uint64_t offset, struct epw_request *req)
+pf_w(uint64_t offset, uint64_t val, struct epw_request *req)
 {
 
 	switch (offset) {
 	case PF_CONTROL:
+		printf("%s: PF_CONTROL val %lx\n", __func__, val);
+		break;
 	case PF_NEXT_LO:
+		printf("%s: PF_NEXT_LO val %lx\n", __func__, val);
+		break;
 	case PF_NEXT_HI:
+		printf("%s: PF_NEXT_HI val %lx\n", __func__, val);
+		break;
 	case PF_POLL_FREQ:
+		printf("%s: PF_POLL_FREQ val %lx\n", __func__, val);
+		break;
 	case PF_STATUS:
+		printf("%s: PF_STATUS val %lx\n", __func__, val);
 		break;
 	};
 }
@@ -94,17 +116,35 @@ emul_msgdma(const struct emul_link *elink, struct epw_softc *sc,
     struct epw_request *req)
 {
 	uint64_t offset;
+	uint64_t val;
 
-	offset = req->addr - elink->base_emul - EPW_BASE;
+	offset = req->addr - elink->base_emul - EPW_WINDOW;
+
+	switch (req->data_len) {
+	case 8:
+		val = *(uint64_t *)req->data;
+		break;
+	case 4:
+		val = *(uint32_t *)req->data;
+		break;
+	case 2:
+		val = *(uint16_t *)req->data;
+		break;
+	case 1:
+		val = *(uint8_t *)req->data;
+		break;
+	}
+
+	printf("%s: offset %lx\n", __func__, offset);
 
 	if (elink->type == MSGDMA_CSR)
 		if (req->is_write)
-			csr_w(offset, req);
+			csr_w(offset, val, req);
 		else
 			csr_r(offset, req);
 	else
 		if (req->is_write)
-			pf_w(offset, req);
+			pf_w(offset, val, req);
 		else
 			pf_r(offset, req);
 }
