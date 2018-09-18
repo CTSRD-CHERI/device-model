@@ -123,5 +123,6 @@ dm_loop(struct epw_softc *sc)
 
 		/* Poll TX */
 		emul_msgdma_poll(&msgdma0_sc);
+		emul_msgdma_poll(&msgdma1_sc);
 	}
 }
