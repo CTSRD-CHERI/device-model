@@ -37,9 +37,17 @@
 
 #include <mips/beri/beri_epw.h>
 #include <dev/altera/msgdma/msgdma.h>
+#include <dev/altera/fifo/a_api.h>
 
 #include "device-model.h"
 #include "emul_msgdma.h"
+
+#define	AVALON_FIFO_TX_BASIC_OPTS_DEPTH	16
+
+#define	WR4_FIFO_MEM(_sc, _reg, _val)		\
+    *(volatile uint32_t *)((_sc)->fifo_base_mem + _reg) = _val
+#define	RD4_FIFO_MEMC(_sc, _reg)		\
+    *(volatile uint32_t *)((_sc)->fifo_base_ctrl + _reg)
 
 #if 0
 static void
@@ -50,7 +58,7 @@ test_ipi(void)
 	addr = BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE;
 	printf("Sending mSGDMA interrupt...\n");
 	*(volatile uint64_t *)(addr) = (1 << 17);	/* mSGDMA0 */
-	*(volatile uint64_t *)(addr) = (1 << 18);	/* mSGDMA0 */
+	*(volatile uint64_t *)(addr) = (1 << 18);	/* mSGDMA1 */
 }
 #endif
 
@@ -65,16 +73,95 @@ static void
 emul_msgdma_process_desc(struct msgdma_softc *sc,
     struct msgdma_desc *desc)
 {
-	uint32_t write_lo;
-	uint32_t read_lo;
+	uint32_t control;
+	uint64_t write_lo;
+	uint64_t read_lo;
 	uint32_t len;
+	uint32_t reg;
+	uint32_t val;
 
-	printf("%s\n", __func__);
-
+	control = bswap32(desc->control);
 	read_lo = bswap32(desc->read_lo);
 	write_lo = bswap32(desc->write_lo);
 	len = bswap32(desc->length);
 	printf("%s: copy %x -> %x, %d bytes\n", __func__, read_lo, write_lo, len);
+	read_lo |= MIPS_XKPHYS_UNCACHED_BASE;
+
+	uint32_t fill_level;
+	uint32_t c;
+	uint32_t leftm;
+	uint32_t tmp;
+
+	if (write_lo == 0) {
+		do {
+			fill_level = RD4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_FILL_LEVEL);
+			fill_level = le32toh(fill_level);
+		} while (fill_level == AVALON_FIFO_TX_BASIC_OPTS_DEPTH);
+
+		/* Mem to dev */
+		if (control & CONTROL_GEN_SOP) {
+			reg = A_ONCHIP_FIFO_MEM_CORE_SOP;
+			WR4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_METADATA, htole32(reg));
+		}
+
+		c = 0;
+		while ((len - c) >= 4) {
+			val = *(uint32_t *)(read_lo);
+			printf("writing %x\n", val);
+			WR4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
+
+			do {
+				fill_level = RD4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_FILL_LEVEL);
+				fill_level = le32toh(fill_level);
+			} while (fill_level == AVALON_FIFO_TX_BASIC_OPTS_DEPTH);
+
+			read_lo += 4;
+			c += 4;
+		}
+
+		val = 0;
+		leftm = (len - c);
+
+		switch (leftm) {
+		case 1:
+			val = *(uint8_t *)(read_lo);
+			val <<= 24;
+			read_lo += 1;
+			break;
+		case 2:
+		case 3:
+			val = *(uint16_t *)(read_lo);
+			val <<= 16;
+			read_lo += 2;
+			if (leftm == 3) {
+				tmp = *(uint8_t *)(read_lo);
+				val |= (tmp << 8);
+				read_lo += 1;
+			}
+		}
+
+		/* Set end of packet. */
+		reg = 0;
+		if (control & CONTROL_GEN_EOP)
+			reg |= A_ONCHIP_FIFO_MEM_CORE_EOP;
+		reg |= ((4 - leftm) << A_ONCHIP_FIFO_MEM_CORE_EMPTY_SHIFT);
+		WR4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_METADATA, htole32(reg));
+
+		/* Ensure there is a FIFO entry available. */
+		do {
+			fill_level = RD4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_FILL_LEVEL);
+			fill_level = le32toh(fill_level);
+		} while (fill_level == AVALON_FIFO_TX_BASIC_OPTS_DEPTH);
+
+		/* Final write */
+		printf("final write %x\n", val);
+		WR4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
+
+		uint64_t addr;
+		addr = bswap32(desc->next);
+		addr |= MIPS_XKPHYS_UNCACHED_BASE;
+		sc->cur_desc = (struct msgdma_desc *)addr;
+	}
 }
 
 void
@@ -88,11 +175,11 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 
 	desc = sc->cur_desc;
 	reg = bswap32(desc->control);
-
-	printf("%s(%d): desc->control %x\n", __func__, sc->unit, reg);
-
-	if (reg & CONTROL_OWN)
+	if (reg & CONTROL_OWN) {
+		printf("%s(%d): desc->control %x\n", __func__, sc->unit, reg);
 		emul_msgdma_process_desc(sc, desc);
+	}
+
 }
 
 static int

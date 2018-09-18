@@ -31,6 +31,8 @@
 #include <sys/cdefs.h>
 #include <sys/systm.h>
 
+#include <machine/cpuregs.h>
+
 #include <mips/beri/beri_epw.h>
 
 #include "device-model.h"
@@ -94,12 +96,12 @@ void
 dm_init(struct epw_softc *sc)
 {
 
-	msgdma0_sc.fifo_base_mem = FIFO0_BASE_MEM;
-	msgdma0_sc.fifo_base_ctrl = FIFO0_BASE_CTRL;
+	msgdma0_sc.fifo_base_mem = FIFO2_BASE_MEM | MIPS_XKPHYS_UNCACHED_BASE;
+	msgdma0_sc.fifo_base_ctrl = FIFO2_BASE_CTRL | MIPS_XKPHYS_UNCACHED_BASE;
 	msgdma0_sc.unit = 0;
 
-	msgdma1_sc.fifo_base_mem = FIFO1_BASE_MEM;
-	msgdma1_sc.fifo_base_ctrl = FIFO1_BASE_CTRL;
+	msgdma1_sc.fifo_base_mem = FIFO3_BASE_MEM | MIPS_XKPHYS_UNCACHED_BASE;
+	msgdma1_sc.fifo_base_ctrl = FIFO3_BASE_CTRL | MIPS_XKPHYS_UNCACHED_BASE;
 	msgdma1_sc.unit = 1;
 }
 
