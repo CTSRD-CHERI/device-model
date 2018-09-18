@@ -120,7 +120,8 @@ dm_loop(struct epw_softc *sc)
 		}
 
 		usleep(100000);
+
+		/* Poll TX */
 		emul_msgdma_poll(&msgdma0_sc);
-		emul_msgdma_poll(&msgdma1_sc);
 	}
 }

@@ -44,8 +44,16 @@
 
 #define	AVALON_FIFO_TX_BASIC_OPTS_DEPTH	16
 
+#define	SOFTDMA_RX_EVENTS	\
+	(A_ONCHIP_FIFO_MEM_CORE_INTR_FULL	| \
+	 A_ONCHIP_FIFO_MEM_CORE_INTR_OVERFLOW	| \
+	 A_ONCHIP_FIFO_MEM_CORE_INTR_UNDERFLOW)
+
 #define	WR4_FIFO_MEM(_sc, _reg, _val)		\
     *(volatile uint32_t *)((_sc)->fifo_base_mem + _reg) = _val
+
+#define	WR4_FIFO_MEMC(_sc, _reg, _val)		\
+    *(volatile uint32_t *)((_sc)->fifo_base_ctrl + _reg) = _val
 #define	RD4_FIFO_MEMC(_sc, _reg)		\
     *(volatile uint32_t *)((_sc)->fifo_base_ctrl + _reg)
 
@@ -62,15 +70,41 @@ test_ipi(void)
 }
 #endif
 
-void
-emul_msgdma_fifo_intr(void *arg)
+static void
+emul_msgdma_process_rx(struct msgdma_softc *sc)
 {
 
 	printf("%s\n", __func__);
 }
 
+void
+emul_msgdma_fifo_intr(void *arg)
+{
+	struct msgdma_softc *sc;
+	uint32_t reg;
+	uint32_t err;
+
+	sc = arg;
+
+	printf("%s\n", __func__);
+
+	reg = RD4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_FILL_LEVEL);
+	reg = le32toh(reg);
+	if (reg & (A_ONCHIP_FIFO_MEM_CORE_EVENT_OVERFLOW |
+	    A_ONCHIP_FIFO_MEM_CORE_EVENT_UNDERFLOW)) {
+		/* Errors */
+		err = (((reg & A_ONCHIP_FIFO_MEM_CORE_ERROR_MASK) >> \
+		    A_ONCHIP_FIFO_MEM_CORE_ERROR_SHIFT) & 0xff);
+		}
+
+	if (reg != 0) {
+		WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_EVENT, htole32(reg));
+		emul_msgdma_process_rx(sc);
+	}
+}
+
 static void
-emul_msgdma_process_desc(struct msgdma_softc *sc,
+emul_msgdma_process_tx(struct msgdma_softc *sc,
     struct msgdma_desc *desc)
 {
 	uint32_t control;
@@ -177,7 +211,7 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 	reg = bswap32(desc->control);
 	if (reg & CONTROL_OWN) {
 		printf("%s(%d): desc->control %x\n", __func__, sc->unit, reg);
-		emul_msgdma_process_desc(sc, desc);
+		emul_msgdma_process_tx(sc, desc);
 	}
 
 }
@@ -194,6 +228,10 @@ emul_msgdma_poll_enable(struct msgdma_softc *sc)
 
 	sc->cur_desc = (struct msgdma_desc *)addr;
 	sc->poll_en = 1;
+
+	if (sc->unit == 1)
+		WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_INT_ENABLE,
+		    htole32(SOFTDMA_RX_EVENTS));
 
 	return (0);
 }
