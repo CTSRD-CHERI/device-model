@@ -31,11 +31,26 @@
 #include <sys/cdefs.h>
 #include <sys/systm.h>
 
+#include <machine/cpuregs.h>
+
 #include <mips/beri/beri_epw.h>
 #include <dev/altera/msgdma/msgdma.h>
 
 #include "device-model.h"
 #include "emul_msgdma.h"
+
+#if 0
+static void
+test_ipi(void)
+{
+	uint64_t addr;
+
+	addr = BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE;
+	printf("Sending mSGDMA interrupt...\n");
+	*(volatile uint64_t *)(addr) = (1 << 17);	/* mSGDMA0 */
+	*(volatile uint64_t *)(addr) = (1 << 18);	/* mSGDMA0 */
+}
+#endif
 
 static void
 csr_r(struct msgdma_softc *sc, struct epw_request *req,
