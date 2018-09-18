@@ -65,14 +65,16 @@ static void
 emul_msgdma_process_desc(struct msgdma_softc *sc,
     struct msgdma_desc *desc)
 {
-	uint32_t reg;
-	uint32_t reg1;
+	uint32_t write_lo;
+	uint32_t read_lo;
+	uint32_t len;
 
 	printf("%s\n", __func__);
 
-	reg = bswap32(desc->read_lo);
-	reg1 = bswap32(desc->write_lo);
-	printf("%s: copy %x -> %x\n", __func__, reg, reg1);
+	read_lo = bswap32(desc->read_lo);
+	write_lo = bswap32(desc->write_lo);
+	len = bswap32(desc->length);
+	printf("%s: copy %x -> %x, %d bytes\n", __func__, read_lo, write_lo, len);
 }
 
 void
