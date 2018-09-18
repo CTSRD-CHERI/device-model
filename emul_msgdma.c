@@ -74,7 +74,7 @@ static void
 emul_msgdma_process_rx(struct msgdma_softc *sc)
 {
 
-	printf("%s\n", __func__);
+	printf("%s(%d)\n", __func__, sc->unit);
 }
 
 void
@@ -194,7 +194,7 @@ emul_msgdma_process_tx(struct msgdma_softc *sc,
 		uint64_t addr;
 		addr = bswap32(desc->next);
 		addr |= MIPS_XKPHYS_UNCACHED_BASE;
-		sc->cur_desc = (struct msgdma_desc *)addr;
+		sc->cur_tx_desc = (struct msgdma_desc *)addr;
 	}
 }
 
@@ -207,7 +207,7 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 	if (sc->poll_en == 0)
 		return;
 
-	desc = sc->cur_desc;
+	desc = sc->cur_tx_desc;
 	reg = bswap32(desc->control);
 	if (reg & CONTROL_OWN) {
 		printf("%s(%d): desc->control %x\n", __func__, sc->unit, reg);
@@ -226,7 +226,7 @@ emul_msgdma_poll_enable(struct msgdma_softc *sc)
 
 	addr = sc->pf_next_lo | MIPS_XKPHYS_UNCACHED_BASE;
 
-	sc->cur_desc = (struct msgdma_desc *)addr;
+	sc->cur_tx_desc = (struct msgdma_desc *)addr;
 	sc->poll_en = 1;
 
 	if (sc->unit == 1)
