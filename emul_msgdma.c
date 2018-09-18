@@ -61,19 +61,52 @@ emul_msgdma_fifo_intr(void *arg)
 	printf("%s\n", __func__);
 }
 
+static void
+emul_msgdma_process_desc(struct msgdma_softc *sc,
+    struct msgdma_desc *desc)
+{
+	uint32_t reg;
+	uint32_t reg1;
+
+	printf("%s\n", __func__);
+
+	reg = bswap32(desc->read_lo);
+	reg1 = bswap32(desc->write_lo);
+	printf("%s: copy %x -> %x\n", __func__, reg, reg1);
+}
+
 void
 emul_msgdma_poll(struct msgdma_softc *sc)
 {
 	struct msgdma_desc *desc;
+	uint32_t reg;
+
+	if (sc->poll_en == 0)
+		return;
+
+	desc = sc->cur_desc;
+	reg = bswap32(desc->control);
+
+	printf("%s(%d): desc->control %x\n", __func__, sc->unit, reg);
+
+	if (reg & CONTROL_OWN)
+		emul_msgdma_process_desc(sc, desc);
+}
+
+static int
+emul_msgdma_poll_enable(struct msgdma_softc *sc)
+{
 	uint64_t addr;
 
 	if (sc->pf_next_lo == 0)
-		return;
+		return (-1);
 
 	addr = sc->pf_next_lo | MIPS_XKPHYS_UNCACHED_BASE;
 
-	desc = (struct msgdma_desc *)addr;
-	printf("%s(%d): desc->control %x\n", __func__, sc->unit, bswap32(desc->control));
+	sc->cur_desc = (struct msgdma_desc *)addr;
+	sc->poll_en = 1;
+
+	return (0);
 }
 
 static void
@@ -144,6 +177,7 @@ pf_w(struct msgdma_softc *sc, struct epw_request *req,
 	case PF_NEXT_LO:
 		printf("%s: PF_NEXT_LO val %lx\n", __func__, val);
 		sc->pf_next_lo = val;
+		emul_msgdma_poll_enable(sc);
 		break;
 	case PF_NEXT_HI:
 		printf("%s: PF_NEXT_HI val %lx\n", __func__, val);

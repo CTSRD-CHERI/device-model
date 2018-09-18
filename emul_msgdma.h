@@ -42,7 +42,9 @@ struct msgdma_softc {
 	uint64_t fifo_base_ctrl;
 	uint32_t pf_next_lo;
 	uint32_t pf_next_hi;
-	uint32_t unit;
+	uint8_t unit;
+	uint8_t poll_en;
+	struct msgdma_desc *cur_desc;
 };
 
 struct emul_link {
