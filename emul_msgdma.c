@@ -32,6 +32,7 @@
 #include <sys/systm.h>
 
 #include <machine/cpuregs.h>
+#include <machine/frame.h>
 
 #include <mips/beri/beri_epw.h>
 #include <dev/altera/msgdma/msgdma.h>
@@ -51,6 +52,13 @@ test_ipi(void)
 	*(volatile uint64_t *)(addr) = (1 << 18);	/* mSGDMA0 */
 }
 #endif
+
+void
+emul_msgdma_fifo_intr(void *arg)
+{
+
+	printf("%s\n", __func__);
+}
 
 static void
 csr_r(struct msgdma_softc *sc, struct epw_request *req,
