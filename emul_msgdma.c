@@ -30,6 +30,7 @@
 
 #include <sys/cdefs.h>
 #include <sys/systm.h>
+#include <sys/endian.h>
 
 #include <machine/cpuregs.h>
 #include <machine/frame.h>
@@ -58,6 +59,21 @@ emul_msgdma_fifo_intr(void *arg)
 {
 
 	printf("%s\n", __func__);
+}
+
+void
+emul_msgdma_poll(struct msgdma_softc *sc)
+{
+	struct msgdma_desc *desc;
+	uint64_t addr;
+
+	if (sc->pf_next_lo == 0)
+		return;
+
+	addr = sc->pf_next_lo | MIPS_XKPHYS_UNCACHED_BASE;
+
+	desc = (struct msgdma_desc *)addr;
+	printf("%s(%d): desc->control %x\n", __func__, sc->unit, bswap32(desc->control));
 }
 
 static void

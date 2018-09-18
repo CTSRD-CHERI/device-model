@@ -187,6 +187,7 @@ main(void)
 	beripic_enable(&beripic_sc, 11, 0);
 	beripic_enable(&beripic_sc, 12, 0);
 
+	dm_init(&epw_sc);
 	dm_loop(&epw_sc);
 
 	return (0);

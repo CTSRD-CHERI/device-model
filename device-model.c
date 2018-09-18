@@ -91,13 +91,16 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 }
 
 void
-dm_init(void)
+dm_init(struct epw_softc *sc)
 {
 
 	msgdma0_sc.fifo_base_mem = FIFO0_BASE_MEM;
 	msgdma0_sc.fifo_base_ctrl = FIFO0_BASE_CTRL;
+	msgdma0_sc.unit = 0;
+
 	msgdma1_sc.fifo_base_mem = FIFO1_BASE_MEM;
 	msgdma1_sc.fifo_base_ctrl = FIFO1_BASE_CTRL;
+	msgdma1_sc.unit = 1;
 }
 
 void
@@ -115,5 +118,7 @@ dm_loop(struct epw_softc *sc)
 		}
 
 		usleep(100000);
+		emul_msgdma_poll(&msgdma0_sc);
+		emul_msgdma_poll(&msgdma1_sc);
 	}
 }

@@ -42,6 +42,7 @@ struct msgdma_softc {
 	uint64_t fifo_base_ctrl;
 	uint32_t pf_next_lo;
 	uint32_t pf_next_hi;
+	uint32_t unit;
 };
 
 struct emul_link {
@@ -56,5 +57,6 @@ struct emul_link {
 void emul_msgdma(const struct emul_link *elink,
     struct epw_softc *sc, struct epw_request *req);
 void emul_msgdma_fifo_intr(void *arg);
+void emul_msgdma_poll(struct msgdma_softc *sc);
 
 #endif	/* !_EMUL_DEVICE_H_ */
