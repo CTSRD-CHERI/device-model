@@ -184,8 +184,10 @@ main(void)
 	epw_init(&epw_sc, EPW_BASE, EPW_WINDOW);
 	epw_control(&epw_sc, 1);
 
-	beripic_enable(&beripic_sc, 11, 0);
-	beripic_enable(&beripic_sc, 12, 0);
+	//beripic_enable(&beripic_sc, 11, 0);
+	//beripic_enable(&beripic_sc, 12, 0);
+	beripic_disable(&beripic_sc, 11);
+	beripic_disable(&beripic_sc, 12);
 
 	dm_init(&epw_sc);
 	dm_loop(&epw_sc);
