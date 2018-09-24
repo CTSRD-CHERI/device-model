@@ -33,7 +33,10 @@
 #include <sys/endian.h>
 
 #include <machine/cpuregs.h>
+#include <machine/cpufunc.h>
 #include <machine/frame.h>
+#include <machine/cache_mipsNN.h>
+#include <machine/cache_r4k.h>
 
 #include <mips/beri/beri_epw.h>
 #include <dev/altera/msgdma/msgdma.h>
@@ -51,22 +54,46 @@
 #define	dprintf(fmt, ...)
 #endif
 
-#define	AVALON_FIFO_TX_BASIC_OPTS_DEPTH	16
+#define	AVALON_FIFO_TX_BASIC_OPTS_DEPTH	14
 
 #define	SOFTDMA_RX_EVENTS	\
-	(A_ONCHIP_FIFO_MEM_CORE_INTR_FULL	| \
+	(A_ONCHIP_FIFO_MEM_CORE_INTR_ALMOSTFULL	| \
 	 A_ONCHIP_FIFO_MEM_CORE_INTR_OVERFLOW	| \
 	 A_ONCHIP_FIFO_MEM_CORE_INTR_UNDERFLOW)
 
 #define	WR4_FIFO_MEM(_sc, _reg, _val)		\
     *(volatile uint32_t *)((_sc)->fifo_base_mem + _reg) = _val
+#define	RD8_FIFO_MEM(_sc, _reg)			\
+    *(volatile uint64_t *)((_sc)->fifo_base_mem + _reg)
 #define	RD4_FIFO_MEM(_sc, _reg)			\
     *(volatile uint32_t *)((_sc)->fifo_base_mem + _reg)
+#define	RD1_FIFO_MEM(_sc, _reg)			\
+    *(volatile uint8_t *)((_sc)->fifo_base_mem + _reg)
 
 #define	WR4_FIFO_MEMC(_sc, _reg, _val)		\
     *(volatile uint32_t *)((_sc)->fifo_base_ctrl + _reg) = _val
 #define	RD4_FIFO_MEMC(_sc, _reg)		\
     *(volatile uint32_t *)((_sc)->fifo_base_ctrl + _reg)
+
+static uint32_t
+fifo_mem_read(struct msgdma_softc *sc, uint64_t reg)
+{
+	uint32_t val;
+
+	val = RD4_FIFO_MEM(sc, reg | 0x9800000000000000ULL);
+	mipsNN_pdcache_inv_range_128((FIFO3_BASE_MEM + reg), 4);
+
+	return (val);
+}
+
+static void
+fifo_mem_write(struct msgdma_softc *sc, uint64_t reg,
+    uint32_t val)
+{
+
+	val = WR4_FIFO_MEM(sc, reg | 0x9800000000000000ULL, val);
+	mipsNN_pdcache_inv_range_128((FIFO2_BASE_MEM + reg), 4);
+}
 
 static struct msgdma_desc *
 emul_msgdma_next_desc(struct msgdma_desc *desc0)
@@ -119,10 +146,10 @@ emul_msgdma_fill_level_wait(struct msgdma_softc *sc)
 	return (val);
 }
 
-static void
-emul_msgdma_process_rx(struct msgdma_softc *sc)
+static int
+emul_msgdma_process_rx_one(struct msgdma_softc *sc,
+    struct msgdma_desc *desc)
 {
-	struct msgdma_desc *desc;
 	uint32_t transferred;
 	uint32_t fill_level;
 	uint64_t read_lo;
@@ -131,7 +158,7 @@ emul_msgdma_process_rx(struct msgdma_softc *sc)
 	uint32_t control;
 	uint32_t data;
 	uint32_t meta;
-	uint32_t timeout;
+	int timeout;
 	int error;
 	int sop_rcvd;
 	int eop_rcvd;
@@ -139,21 +166,19 @@ emul_msgdma_process_rx(struct msgdma_softc *sc)
 
 	fill_level = emul_msgdma_fill_level(sc);
 	if (fill_level == 0)
-		return;
+		return (0);
 
-	printf("%s(%d): fill_level %d\n", __func__, sc->unit, fill_level);
-
-	desc = sc->cur_desc;
+	dprintf("%s(%d): fill_level %d\n", __func__, sc->unit, fill_level);
 
 	control = le32toh(desc->control);
 	if ((control & CONTROL_OWN) == 0)
-		return;
+		return (0);
 
 	read_lo = le32toh(desc->read_lo);
 	write_lo = le32toh(desc->write_lo);
 	len = le32toh(desc->length);
 
-	printf("%s: desc %x -> %x, %d bytes\n", __func__, read_lo, write_lo, len);
+	dprintf("%s: desc %x -> %x, %d bytes\n", __func__, read_lo, write_lo, len);
 	write_lo |= MIPS_XKPHYS_UNCACHED_BASE;
 	error = 0;
 	sop_rcvd = 0;
@@ -161,31 +186,30 @@ emul_msgdma_process_rx(struct msgdma_softc *sc)
 	empty = 0;
 	transferred = 0;
 	while (fill_level) {
-		data = RD4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_DATA);
+		data = fifo_mem_read(sc, A_ONCHIP_FIFO_MEM_CORE_DATA);
 		meta = RD4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_METADATA);
 		meta = le32toh(meta);
-		if (meta & A_ONCHIP_FIFO_MEM_CORE_ERROR_MASK) {
+		if ((meta & A_ONCHIP_FIFO_MEM_CORE_ERROR_MASK) ||
+		    (meta & A_ONCHIP_FIFO_MEM_CORE_CHANNEL_MASK) != 0) {
+			printf("error\n");
 			error = 1;
 			break;
 		}
 
-		if ((meta & A_ONCHIP_FIFO_MEM_CORE_CHANNEL_MASK) != 0) {
-			error = 1;
-			break;
-		}
-
+		/* Check for start of the packet */
 		if (meta & A_ONCHIP_FIFO_MEM_CORE_SOP)
 			sop_rcvd = 1;
-
-		if (meta & A_ONCHIP_FIFO_MEM_CORE_EOP) {
-			empty = (meta & A_ONCHIP_FIFO_MEM_CORE_EMPTY_MASK) >>
-			    A_ONCHIP_FIFO_MEM_CORE_EMPTY_SHIFT;
-		}
-
 		if (sop_rcvd == 0) {
 			printf("%s: sop not received\n", __func__);
 			error = 1;
 			break;
+		}
+
+		empty = 0;
+		if (meta & A_ONCHIP_FIFO_MEM_CORE_EOP) {
+			eop_rcvd = 1;
+			empty = (meta & A_ONCHIP_FIFO_MEM_CORE_EMPTY_MASK) >>
+			    A_ONCHIP_FIFO_MEM_CORE_EMPTY_SHIFT;
 		}
 
 		if (empty == 0) {
@@ -196,6 +220,7 @@ emul_msgdma_process_rx(struct msgdma_softc *sc)
 			*(uint16_t *)(write_lo) = ((data >> 16) & 0xffff);
 			write_lo += 2;
 			transferred += 2;
+
 			*(uint8_t *)(write_lo) = ((data >> 8) & 0xff);
 			write_lo += 1;
 			transferred += 1;
@@ -203,16 +228,15 @@ emul_msgdma_process_rx(struct msgdma_softc *sc)
 			panic("implement me %d\n", empty);
 		}
 
-		if (meta & A_ONCHIP_FIFO_MEM_CORE_EOP) {
-			eop_rcvd = 1;
+		if (meta & A_ONCHIP_FIFO_MEM_CORE_EOP)
 			break;
-		}
 
-		fill_level = emul_msgdma_fill_level(sc);
-		timeout = 10000;
-		while (fill_level == 0 && timeout--)
+		timeout = 100;
+		do {
 			fill_level = emul_msgdma_fill_level(sc);
-		if (timeout == 0) {
+		} while (fill_level == 0 && timeout--);
+
+		if (timeout <= 0) {
 			printf("%s: eop not received\n", __func__);
 			/* No EOP received. Broken packet. */
 			error = 1;
@@ -220,17 +244,18 @@ emul_msgdma_process_rx(struct msgdma_softc *sc)
 		}
 	}
 
-	if (error == 0) {
-		printf("%s: packet received, %d bytes (sop_rcvd %d eop_rcvd %d)\n", __func__, transferred, sop_rcvd, eop_rcvd);
+	if (error != 0)
+		return 0;
 
-		desc->transferred = htole32(transferred);
-		control &= ~CONTROL_OWN;
-		desc->control = htole32(control);
-		__asm __volatile("sync;sync;sync");
-		sc->cur_desc = emul_msgdma_next_desc(desc);
+	dprintf("%s: packet received, %d bytes (sop_rcvd %d eop_rcvd %d fill_level %d)\n",
+	    __func__, transferred, sop_rcvd, eop_rcvd, fill_level);
 
-		send_soft_irq(sc);
-	}
+	desc->transferred = htole32(transferred);
+	control &= ~CONTROL_OWN;
+	desc->control = htole32(control);
+	__asm __volatile("sync");
+
+	return (transferred);
 }
 
 void
@@ -245,23 +270,25 @@ emul_msgdma_fifo_intr(void *arg)
 	reg = RD4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_EVENT);
 	reg = le32toh(reg);
 
-	printf("%s: reg %x\n", __func__, reg);
+	dprintf("%s: reg %x\n", __func__, reg);
 
 	if (reg & (A_ONCHIP_FIFO_MEM_CORE_EVENT_OVERFLOW |
 	    A_ONCHIP_FIFO_MEM_CORE_EVENT_UNDERFLOW)) {
 		/* Errors */
 		err = (((reg & A_ONCHIP_FIFO_MEM_CORE_ERROR_MASK) >> \
 		    A_ONCHIP_FIFO_MEM_CORE_ERROR_SHIFT) & 0xff);
-		}
+		dprintf("%s: reg %x err %x\n", __func__, reg, err);
+	}
 
-	//if (reg != 0) {
+	if (reg != 0) {
+		if (sc->unit == 1)
+			emul_msgdma_poll(sc);
 		WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_EVENT, htole32(reg));
-		emul_msgdma_process_rx(sc);
-	//}
+	}
 }
 
-static void
-emul_msgdma_process_tx(struct msgdma_softc *sc,
+static int
+emul_msgdma_process_tx_one(struct msgdma_softc *sc,
     struct msgdma_desc *desc)
 {
 	uint32_t transferred;
@@ -276,7 +303,7 @@ emul_msgdma_process_tx(struct msgdma_softc *sc,
 	read_lo = le32toh(desc->read_lo);
 	write_lo = le32toh(desc->write_lo);
 	len = le32toh(desc->length);
-	printf("%s: copy %x -> %x, %d bytes\n", __func__, read_lo, write_lo, len);
+	dprintf("%s: copy %x -> %x, %d bytes\n", __func__, read_lo, write_lo, len);
 	read_lo |= MIPS_XKPHYS_UNCACHED_BASE;
 
 	uint32_t fill_level;
@@ -300,9 +327,11 @@ emul_msgdma_process_tx(struct msgdma_softc *sc,
 	c = 0;
 	while ((len - c) >= 4) {
 		val = *(uint32_t *)(read_lo);
-		WR4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
+		fifo_mem_write(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
 
-		fill_level = emul_msgdma_fill_level_wait(sc);
+		fill_level += 1;
+		if (fill_level == AVALON_FIFO_TX_BASIC_OPTS_DEPTH)
+			fill_level = emul_msgdma_fill_level_wait(sc);
 
 		read_lo += 4;
 		transferred += 4;
@@ -344,40 +373,49 @@ emul_msgdma_process_tx(struct msgdma_softc *sc,
 	fill_level = emul_msgdma_fill_level_wait(sc);
 
 	/* Final write */
-	WR4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
+	fifo_mem_write(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
 
-	printf("%s: packet sent, %d bytes\n", __func__, transferred);
 	desc->transferred = htole32(transferred);
 	control &= ~CONTROL_OWN;
 	desc->control = htole32(control);
-	__asm __volatile("sync;sync;sync");
+	__asm __volatile("sync");
 
-	sc->cur_desc = emul_msgdma_next_desc(desc);
-	send_soft_irq(sc);
+	return (transferred);
 }
 
 void
 emul_msgdma_poll(struct msgdma_softc *sc)
 {
 	struct msgdma_desc *desc;
+	uint32_t intr;
 	uint32_t reg;
+	int processed;
+	int ret;
 
 	if (sc->poll_en == 0)
 		return;
 
-	if (sc->unit == 1) {
-		emul_msgdma_process_rx(sc);
-		return;
-	}
+	processed = 0;
+	do {
+		desc = sc->cur_desc;
+		reg = le32toh(desc->control);
+		if ((reg & CONTROL_OWN) == 0)
+			break;
+		if (sc->unit == 0)
+			ret = emul_msgdma_process_tx_one(sc, desc);
+		else {
+			intr = intr_disable();
+			ret = emul_msgdma_process_rx_one(sc, desc);
+			intr_restore(intr);
+		}
+		if (ret <= 0)
+			break;
+		processed ++;
+		sc->cur_desc = emul_msgdma_next_desc(desc);
+	} while (sc->cur_desc);
 
-	desc = sc->cur_desc;
-	reg = le32toh(desc->control);
-	if (reg & CONTROL_OWN) {
-		printf("%s(%d): desc->control %x\n", __func__, sc->unit, reg);
-		emul_msgdma_process_tx(sc, desc);
-	} else {
-		printf("%s(%d): not owned: %x\n", __func__, sc->unit, reg);
-	}
+	if (processed > 0)
+		send_soft_irq(sc);
 }
 
 static int
@@ -391,13 +429,11 @@ emul_msgdma_poll_enable(struct msgdma_softc *sc)
 	addr = sc->pf_next_lo | MIPS_XKPHYS_UNCACHED_BASE;
 
 	sc->cur_desc = (struct msgdma_desc *)addr;
+	sc->poll_en = 1;
 
-	if (sc->unit == 0)
-		sc->poll_en = 1;
-	else {
-		sc->poll_en = 1;
-		WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_INT_ENABLE, 0);
-		return (0);
+	WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_INT_ENABLE, 0);
+
+	if (sc->unit == 1) {
 		printf("%s(%d): enabling interrupts\n", __func__, sc->unit);
 		WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_INT_ENABLE,
 		    htole32(SOFTDMA_RX_EVENTS));
@@ -413,10 +449,10 @@ csr_r(struct msgdma_softc *sc, struct epw_request *req,
 
 	switch (offset) {
 	case DMA_STATUS:
-		printf("%s: DMA_STATUS\n", __func__);
+		dprintf("%s: DMA_STATUS\n", __func__);
 		break;
 	case DMA_CONTROL:
-		printf("%s: DMA_CONTROL\n", __func__);
+		dprintf("%s: DMA_CONTROL\n", __func__);
 		break;
 	};
 }
@@ -428,10 +464,10 @@ csr_w(struct msgdma_softc *sc, struct epw_request *req,
 
 	switch (offset) {
 	case DMA_STATUS:
-		printf("%s: DMA_STATUS, val %x\n", __func__, val);
+		dprintf("%s: DMA_STATUS, val %x\n", __func__, val);
 		break;
 	case DMA_CONTROL:
-		printf("%s: DMA_CONTROL, val %x\n", __func__, val);
+		dprintf("%s: DMA_CONTROL, val %x\n", __func__, val);
 		break;
 	};
 }
@@ -443,21 +479,21 @@ pf_r(struct msgdma_softc *sc, struct epw_request *req,
 
 	switch (offset) {
 	case PF_CONTROL:
-		printf("%s: PF_CONTROL\n", __func__);
+		dprintf("%s: PF_CONTROL\n", __func__);
 		break;
 	case PF_NEXT_LO:
-		printf("%s: PF_NEXT_LO\n", __func__);
+		dprintf("%s: PF_NEXT_LO\n", __func__);
 		bcopy((void *)&sc->pf_next_lo, (void *)req->data, 4);
 		break;
 	case PF_NEXT_HI:
-		printf("%s: PF_NEXT_HI\n", __func__);
+		dprintf("%s: PF_NEXT_HI\n", __func__);
 		bcopy(&sc->pf_next_hi, req->data, 4);
 		break;
 	case PF_POLL_FREQ:
-		printf("%s: PF_POLL_FREQ\n", __func__);
+		dprintf("%s: PF_POLL_FREQ\n", __func__);
 		break;
 	case PF_STATUS:
-		printf("%s: PF_STATUS\n", __func__);
+		dprintf("%s: PF_STATUS\n", __func__);
 		break;
 	};
 }
@@ -469,22 +505,22 @@ pf_w(struct msgdma_softc *sc, struct epw_request *req,
 
 	switch (offset) {
 	case PF_CONTROL:
-		printf("%s: PF_CONTROL val %lx\n", __func__, val);
+		dprintf("%s: PF_CONTROL val %lx\n", __func__, val);
 		break;
 	case PF_NEXT_LO:
-		printf("%s: PF_NEXT_LO val %lx\n", __func__, val);
+		dprintf("%s: PF_NEXT_LO val %lx\n", __func__, val);
 		sc->pf_next_lo = val;
 		emul_msgdma_poll_enable(sc);
 		break;
 	case PF_NEXT_HI:
-		printf("%s: PF_NEXT_HI val %lx\n", __func__, val);
+		dprintf("%s: PF_NEXT_HI val %lx\n", __func__, val);
 		sc->pf_next_hi = val;
 		break;
 	case PF_POLL_FREQ:
-		printf("%s: PF_POLL_FREQ val %lx\n", __func__, val);
+		dprintf("%s: PF_POLL_FREQ val %lx\n", __func__, val);
 		break;
 	case PF_STATUS:
-		printf("%s: PF_STATUS val %lx\n", __func__, val);
+		dprintf("%s: PF_STATUS val %lx\n", __func__, val);
 		break;
 	};
 }
@@ -516,7 +552,7 @@ emul_msgdma(const struct emul_link *elink, struct epw_softc *epw_sc,
 		break;
 	}
 
-	printf("%s: offset %lx\n", __func__, offset);
+	dprintf("%s: offset %lx\n", __func__, offset);
 
 	if (elink->type == MSGDMA_CSR)
 		if (req->is_write)
