@@ -14,6 +14,7 @@ OBJECTS =	device-model.o					\
 		osfive/sys/dev/altera/jtag_uart/jtag_uart.o	\
 		osfive/sys/mips/beri/beripic.o			\
 		osfive/sys/mips/beri/beri_epw.o			\
+		osfive/sys/mips/mips/cache_mipsNN.o		\
 		osfive/sys/mips/mips/timer.o			\
 		osfive/sys/mips/mips/trap.o			\
 		osfive/sys/mips/mips/exception.o		\
