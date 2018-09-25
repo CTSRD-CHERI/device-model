@@ -121,9 +121,14 @@ emul_msgdma_next_desc(struct msgdma_desc *desc0)
 static void
 send_soft_irq(struct msgdma_softc *sc)
 {
+	struct msgdma_csr *csr;
 	uint64_t addr;
 
 	dprintf("%s\n", __func__);
+
+	csr = &sc->csr;
+	if ((csr->dma_control & CONTROL_GIEM) == 0)
+		return;
 
 	addr = BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE;
 
@@ -460,13 +465,18 @@ static void
 csr_r(struct msgdma_softc *sc, struct epw_request *req,
     uint64_t offset)
 {
+	struct msgdma_csr *csr;
+
+	csr = &sc->csr;
 
 	switch (offset) {
 	case DMA_STATUS:
 		dprintf("%s: DMA_STATUS\n", __func__);
+		bcopy((void *)&csr->dma_status, (void *)req->data, 4);
 		break;
 	case DMA_CONTROL:
 		dprintf("%s: DMA_CONTROL\n", __func__);
+		bcopy((void *)&csr->dma_control, (void *)req->data, 4);
 		break;
 	};
 }
@@ -475,13 +485,23 @@ static void
 csr_w(struct msgdma_softc *sc, struct epw_request *req,
     uint64_t offset, uint64_t val)
 {
+	struct msgdma_csr *csr;
+
+	csr = &sc->csr;
 
 	switch (offset) {
 	case DMA_STATUS:
 		dprintf("%s: DMA_STATUS, val %x\n", __func__, val);
+		csr->dma_status = val;
 		break;
 	case DMA_CONTROL:
 		dprintf("%s: DMA_CONTROL, val %x\n", __func__, val);
+		if (val & CONTROL_RESET) {
+			csr->dma_status = 0;
+			csr->dma_control = 0;
+		} else {
+			csr->dma_control = val;
+		}
 		break;
 	};
 }
@@ -497,6 +517,7 @@ pf_r(struct msgdma_softc *sc, struct epw_request *req,
 	switch (offset) {
 	case PF_CONTROL:
 		dprintf("%s: PF_CONTROL\n", __func__);
+		bcopy(&pf->pf_control, req->data, 4);
 		break;
 	case PF_NEXT_LO:
 		dprintf("%s: PF_NEXT_LO\n", __func__);
@@ -508,9 +529,11 @@ pf_r(struct msgdma_softc *sc, struct epw_request *req,
 		break;
 	case PF_POLL_FREQ:
 		dprintf("%s: PF_POLL_FREQ\n", __func__);
+		bcopy(&pf->pf_poll_freq, req->data, 4);
 		break;
 	case PF_STATUS:
 		dprintf("%s: PF_STATUS\n", __func__);
+		bcopy(&pf->pf_status, req->data, 4);
 		break;
 	};
 }
@@ -526,11 +549,11 @@ pf_w(struct msgdma_softc *sc, struct epw_request *req,
 	switch (offset) {
 	case PF_CONTROL:
 		dprintf("%s: PF_CONTROL val %lx\n", __func__, val);
+		pf->pf_control = val;
 		break;
 	case PF_NEXT_LO:
 		dprintf("%s: PF_NEXT_LO val %lx\n", __func__, val);
 		pf->pf_next_lo = val;
-		emul_msgdma_poll_enable(sc);
 		break;
 	case PF_NEXT_HI:
 		dprintf("%s: PF_NEXT_HI val %lx\n", __func__, val);
@@ -538,9 +561,13 @@ pf_w(struct msgdma_softc *sc, struct epw_request *req,
 		break;
 	case PF_POLL_FREQ:
 		dprintf("%s: PF_POLL_FREQ val %lx\n", __func__, val);
+		pf->pf_poll_freq = val;
+		if (val != 0)
+			emul_msgdma_poll_enable(sc);
 		break;
 	case PF_STATUS:
 		dprintf("%s: PF_STATUS val %lx\n", __func__, val);
+		pf->pf_status = val;
 		break;
 	};
 }
