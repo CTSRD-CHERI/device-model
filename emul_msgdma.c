@@ -57,7 +57,7 @@
 #define	AVALON_FIFO_TX_BASIC_OPTS_DEPTH	14
 
 #define	SOFTDMA_RX_EVENTS	\
-	(A_ONCHIP_FIFO_MEM_CORE_INTR_ALMOSTFULL	| \
+	(A_ONCHIP_FIFO_MEM_CORE_INTR_FULL	| \
 	 A_ONCHIP_FIFO_MEM_CORE_INTR_OVERFLOW	| \
 	 A_ONCHIP_FIFO_MEM_CORE_INTR_UNDERFLOW)
 
@@ -91,8 +91,7 @@ fifo_mem_write(struct msgdma_softc *sc, uint64_t reg,
     uint32_t val)
 {
 
-	val = WR4_FIFO_MEM(sc, reg | 0x9800000000000000ULL, val);
-	mipsNN_pdcache_inv_range_128((FIFO2_BASE_MEM + reg), 4);
+	WR4_FIFO_MEM(sc, reg, val);
 }
 
 static struct msgdma_desc *
@@ -253,7 +252,7 @@ emul_msgdma_process_rx_one(struct msgdma_softc *sc,
 	desc->transferred = htole32(transferred);
 	control &= ~CONTROL_OWN;
 	desc->control = htole32(control);
-	__asm __volatile("sync");
+	__asm __volatile("sync;sync;sync");
 
 	return (transferred);
 }
@@ -378,7 +377,7 @@ emul_msgdma_process_tx_one(struct msgdma_softc *sc,
 	desc->transferred = htole32(transferred);
 	control &= ~CONTROL_OWN;
 	desc->control = htole32(control);
-	__asm __volatile("sync");
+	__asm __volatile("sync;sync;sync");
 
 	return (transferred);
 }
@@ -395,6 +394,8 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 	if (sc->poll_en == 0)
 		return;
 
+	intr = intr_disable();
+
 	processed = 0;
 	do {
 		desc = sc->cur_desc;
@@ -404,15 +405,15 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 		if (sc->unit == 0)
 			ret = emul_msgdma_process_tx_one(sc, desc);
 		else {
-			intr = intr_disable();
 			ret = emul_msgdma_process_rx_one(sc, desc);
-			intr_restore(intr);
 		}
 		if (ret <= 0)
 			break;
 		processed ++;
 		sc->cur_desc = emul_msgdma_next_desc(desc);
 	} while (sc->cur_desc);
+
+	intr_restore(intr);
 
 	if (processed > 0)
 		send_soft_irq(sc);
@@ -435,6 +436,7 @@ emul_msgdma_poll_enable(struct msgdma_softc *sc)
 
 	if (sc->unit == 1) {
 		printf("%s(%d): enabling interrupts\n", __func__, sc->unit);
+		WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_EVENT, 0);
 		WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_INT_ENABLE,
 		    htole32(SOFTDMA_RX_EVENTS));
 	}
