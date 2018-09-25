@@ -36,14 +36,27 @@ enum msgdma_device_type {
 	MSGDMA_PF,
 };
 
+struct msgdma_csr {
+	uint32_t dma_status;
+	uint32_t dma_control;
+};
+
+struct msgdma_pf {
+	uint32_t pf_control;
+	uint32_t pf_next_lo;
+	uint32_t pf_next_hi;
+	uint32_t pf_poll_freq;
+	uint32_t pf_status;
+};
+
 struct msgdma_softc {
 	uint32_t state;
 	uint64_t fifo_base_mem;
 	uint64_t fifo_base_ctrl;
-	uint32_t pf_next_lo;
-	uint32_t pf_next_hi;
-	uint8_t unit;
+	struct msgdma_csr csr;
+	struct msgdma_pf pf;
 	uint8_t poll_en;
+	uint8_t unit;
 	struct msgdma_desc *cur_desc;
 };
 

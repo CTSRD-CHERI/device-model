@@ -54,7 +54,7 @@
 #define	dprintf(fmt, ...)
 #endif
 
-#define	AVALON_FIFO_TX_BASIC_OPTS_DEPTH	14
+#define	AVALON_FIFO_TX_BASIC_OPTS_DEPTH	16
 
 #define	SOFTDMA_RX_EVENTS	\
 	(A_ONCHIP_FIFO_MEM_CORE_INTR_FULL	| \
@@ -180,10 +180,6 @@ emul_msgdma_process_rx_one(struct msgdma_softc *sc,
 
 	dprintf("%s(%d): fill_level %d\n", __func__, sc->unit, fill_level);
 
-	control = le32toh(desc->control);
-	if ((control & CONTROL_OWN) == 0)
-		return (0);
-
 	read_lo = le32toh(desc->read_lo);
 	write_lo = le32toh(desc->write_lo);
 	len = le32toh(desc->length);
@@ -204,7 +200,7 @@ emul_msgdma_process_rx_one(struct msgdma_softc *sc,
 		if ((meta & A_ONCHIP_FIFO_MEM_CORE_ERROR_MASK) ||
 		    (meta & A_ONCHIP_FIFO_MEM_CORE_CHANNEL_MASK) != 0) {
 			printf("error\n");
-			error = 1;
+			error = -1;
 			break;
 		}
 
@@ -213,7 +209,7 @@ emul_msgdma_process_rx_one(struct msgdma_softc *sc,
 			sop_rcvd = 1;
 		if (sop_rcvd == 0) {
 			printf("%s: sop not received\n", __func__);
-			error = 1;
+			error = -2;
 			break;
 		}
 
@@ -251,18 +247,19 @@ emul_msgdma_process_rx_one(struct msgdma_softc *sc,
 		if (timeout <= 0) {
 			printf("%s: eop not received\n", __func__);
 			/* No EOP received. Broken packet. */
-			error = 1;
+			error = -3;
 			break;
 		}
 	}
 
 	if (error != 0)
-		return 0;
+		return (error);
 
 	dprintf("%s: packet received, %d bytes (sop_rcvd %d eop_rcvd %d fill_level %d)\n",
 	    __func__, transferred, sop_rcvd, eop_rcvd, fill_level);
 
 	desc->transferred = htole32(transferred);
+	control = le32toh(desc->control);
 	control &= ~CONTROL_OWN;
 	desc->control = htole32(control);
 	__asm __volatile("sync;sync;sync");
@@ -435,12 +432,14 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 static int
 emul_msgdma_poll_enable(struct msgdma_softc *sc)
 {
+	struct msgdma_pf *pf;
 	uint64_t addr;
 
-	if (sc->pf_next_lo == 0)
+	pf = &sc->pf;
+	if (pf->pf_next_lo == 0)
 		return (-1);
 
-	addr = sc->pf_next_lo | MIPS_XKPHYS_UNCACHED_BASE;
+	addr = pf->pf_next_lo | MIPS_XKPHYS_UNCACHED_BASE;
 
 	sc->cur_desc = (struct msgdma_desc *)addr;
 	sc->poll_en = 1;
@@ -448,7 +447,7 @@ emul_msgdma_poll_enable(struct msgdma_softc *sc)
 	WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_INT_ENABLE, 0);
 
 	if (sc->unit == 1) {
-		printf("%s(%d): enabling interrupts\n", __func__, sc->unit);
+		dprintf("%s(%d): Enabling RX interrupts\n", __func__, sc->unit);
 		WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_EVENT, 0);
 		WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_INT_ENABLE,
 		    htole32(SOFTDMA_RX_EVENTS));
@@ -491,6 +490,9 @@ static void
 pf_r(struct msgdma_softc *sc, struct epw_request *req,
     uint64_t offset)
 {
+	struct msgdma_pf *pf;
+
+	pf = &sc->pf;
 
 	switch (offset) {
 	case PF_CONTROL:
@@ -498,11 +500,11 @@ pf_r(struct msgdma_softc *sc, struct epw_request *req,
 		break;
 	case PF_NEXT_LO:
 		dprintf("%s: PF_NEXT_LO\n", __func__);
-		bcopy((void *)&sc->pf_next_lo, (void *)req->data, 4);
+		bcopy((void *)&pf->pf_next_lo, (void *)req->data, 4);
 		break;
 	case PF_NEXT_HI:
 		dprintf("%s: PF_NEXT_HI\n", __func__);
-		bcopy(&sc->pf_next_hi, req->data, 4);
+		bcopy(&pf->pf_next_hi, req->data, 4);
 		break;
 	case PF_POLL_FREQ:
 		dprintf("%s: PF_POLL_FREQ\n", __func__);
@@ -517,6 +519,9 @@ static void
 pf_w(struct msgdma_softc *sc, struct epw_request *req,
     uint64_t offset, uint64_t val)
 {
+	struct msgdma_pf *pf;
+
+	pf = &sc->pf;
 
 	switch (offset) {
 	case PF_CONTROL:
@@ -524,12 +529,12 @@ pf_w(struct msgdma_softc *sc, struct epw_request *req,
 		break;
 	case PF_NEXT_LO:
 		dprintf("%s: PF_NEXT_LO val %lx\n", __func__, val);
-		sc->pf_next_lo = val;
+		pf->pf_next_lo = val;
 		emul_msgdma_poll_enable(sc);
 		break;
 	case PF_NEXT_HI:
 		dprintf("%s: PF_NEXT_HI val %lx\n", __func__, val);
-		sc->pf_next_hi = val;
+		pf->pf_next_hi = val;
 		break;
 	case PF_POLL_FREQ:
 		dprintf("%s: PF_POLL_FREQ val %lx\n", __func__, val);
