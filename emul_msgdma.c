@@ -61,38 +61,49 @@
 	 A_ONCHIP_FIFO_MEM_CORE_INTR_OVERFLOW	| \
 	 A_ONCHIP_FIFO_MEM_CORE_INTR_UNDERFLOW)
 
-#define	WR4_FIFO_MEM(_sc, _reg, _val)		\
-    *(volatile uint32_t *)((_sc)->fifo_base_mem + _reg) = _val
-#define	RD8_FIFO_MEM(_sc, _reg)			\
-    *(volatile uint64_t *)((_sc)->fifo_base_mem + _reg)
-#define	RD4_FIFO_MEM(_sc, _reg)			\
-    *(volatile uint32_t *)((_sc)->fifo_base_mem + _reg)
-#define	RD1_FIFO_MEM(_sc, _reg)			\
-    *(volatile uint8_t *)((_sc)->fifo_base_mem + _reg)
+#define	WR4_FIFO_MEM(_sc, _reg, _val) ({	\
+	uint64_t _r;				\
+	_r = MIPS_XKPHYS_UNCACHED_BASE;		\
+	_r |= (_sc)->fifo_base_mem + _reg;	\
+	*(volatile uint32_t *)(_r) = _val;	\
+});
 
-#define	WR4_FIFO_MEMC(_sc, _reg, _val)		\
-    *(volatile uint32_t *)((_sc)->fifo_base_ctrl + _reg) = _val
-#define	RD4_FIFO_MEMC(_sc, _reg)		\
-    *(volatile uint32_t *)((_sc)->fifo_base_ctrl + _reg)
+#define	RD4_FIFO_MEM(_sc, _reg) ({		\
+	uint64_t _r;				\
+	uint64_t _val;				\
+	_r = MIPS_XKPHYS_UNCACHED_BASE;		\
+	_r |= (_sc)->fifo_base_mem + _reg;	\
+	_val = *(volatile uint32_t *)(_r);	\
+	_val;					\
+});
 
-static uint32_t
-fifo_mem_read(struct msgdma_softc *sc, uint64_t reg)
-{
-	uint32_t val;
+#define	RD4_FIFO_MEM_CACHED(_sc, _reg) ({	\
+	uint64_t _r;				\
+	uint64_t _val;				\
+	_r = MIPS_XKPHYS_CACHED_BASE;		\
+	_r |= (_sc)->fifo_base_mem + _reg;	\
+	_val = *(volatile uint32_t *)(_r);	\
+	_val;					\
+});
 
-	val = RD4_FIFO_MEM(sc, reg | 0x9800000000000000ULL);
-	mipsNN_pdcache_inv_range_128((FIFO3_BASE_MEM + reg), 4);
+#define	WR4_FIFO_MEMC(_sc, _reg, _val) ({	\
+	uint64_t _r;				\
+	_r = MIPS_XKPHYS_UNCACHED_BASE;		\
+	_r |= (_sc)->fifo_base_ctrl + _reg;	\
+	*(volatile uint32_t *)(_r) = _val;	\
+});
 
-	return (val);
-}
+#define	RD4_FIFO_MEMC(_sc, _reg) ({		\
+	uint64_t _r;				\
+	uint64_t _val;				\
+	_r = MIPS_XKPHYS_UNCACHED_BASE;		\
+	_r |= (_sc)->fifo_base_ctrl + _reg;	\
+	_val = *(volatile uint32_t *)(_r);	\
+	_val;					\
+});
 
-static void
-fifo_mem_write(struct msgdma_softc *sc, uint64_t reg,
-    uint32_t val)
-{
-
-	WR4_FIFO_MEM(sc, reg, val);
-}
+#define	CACHE_FIFO_MEM_INV(_sc, _reg)		\
+	mipsNN_pdcache_inv_range_128(((_sc)->fifo_base_mem + _reg), 4);
 
 static struct msgdma_desc *
 emul_msgdma_next_desc(struct msgdma_desc *desc0)
@@ -185,7 +196,9 @@ emul_msgdma_process_rx_one(struct msgdma_softc *sc,
 	empty = 0;
 	transferred = 0;
 	while (fill_level) {
-		data = fifo_mem_read(sc, A_ONCHIP_FIFO_MEM_CORE_DATA);
+		data = RD4_FIFO_MEM_CACHED(sc, A_ONCHIP_FIFO_MEM_CORE_DATA);
+		CACHE_FIFO_MEM_INV(sc, A_ONCHIP_FIFO_MEM_CORE_DATA);
+
 		meta = RD4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_METADATA);
 		meta = le32toh(meta);
 		if ((meta & A_ONCHIP_FIFO_MEM_CORE_ERROR_MASK) ||
@@ -326,7 +339,7 @@ emul_msgdma_process_tx_one(struct msgdma_softc *sc,
 	c = 0;
 	while ((len - c) >= 4) {
 		val = *(uint32_t *)(read_lo);
-		fifo_mem_write(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
+		WR4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
 
 		fill_level += 1;
 		if (fill_level == AVALON_FIFO_TX_BASIC_OPTS_DEPTH)
@@ -372,7 +385,7 @@ emul_msgdma_process_tx_one(struct msgdma_softc *sc,
 	fill_level = emul_msgdma_fill_level_wait(sc);
 
 	/* Final write */
-	fifo_mem_write(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
+	WR4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
 
 	desc->transferred = htole32(transferred);
 	control &= ~CONTROL_OWN;
