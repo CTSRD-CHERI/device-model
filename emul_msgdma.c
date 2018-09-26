@@ -170,7 +170,6 @@ emul_msgdma_process_rx_one(struct msgdma_softc *sc,
 	uint64_t read_lo;
 	uint64_t write_lo;
 	uint32_t len;
-	uint32_t control;
 	uint32_t data;
 	uint32_t meta;
 	int timeout;
@@ -262,12 +261,6 @@ emul_msgdma_process_rx_one(struct msgdma_softc *sc,
 
 	dprintf("%s: packet received, %d bytes (sop_rcvd %d eop_rcvd %d fill_level %d)\n",
 	    __func__, transferred, sop_rcvd, eop_rcvd, fill_level);
-
-	desc->transferred = htole32(transferred);
-	control = le32toh(desc->control);
-	control &= ~CONTROL_OWN;
-	desc->control = htole32(control);
-	__asm __volatile("sync;sync;sync");
 
 	return (transferred);
 }
@@ -389,11 +382,6 @@ emul_msgdma_process_tx_one(struct msgdma_softc *sc,
 	/* Final write */
 	WR4_FIFO_MEM(sc, A_ONCHIP_FIFO_MEM_CORE_DATA, val);
 
-	desc->transferred = htole32(transferred);
-	control &= ~CONTROL_OWN;
-	desc->control = htole32(control);
-	__asm __volatile("sync;sync;sync");
-
 	return (transferred);
 }
 
@@ -403,34 +391,42 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 	struct msgdma_desc *desc;
 	uint32_t intr;
 	uint32_t reg;
+	uint32_t control;
 	int processed;
-	int ret;
+	int count;
 
 	if (sc->poll_en == 0)
 		return;
 
 	intr = intr_disable();
 
-	processed = 0;
+	count = 0;
 	do {
 		desc = sc->cur_desc;
 		reg = le32toh(desc->control);
 		if ((reg & CONTROL_OWN) == 0)
 			break;
 		if (sc->unit == 0)
-			ret = emul_msgdma_process_tx_one(sc, desc);
+			processed = emul_msgdma_process_tx_one(sc, desc);
 		else {
-			ret = emul_msgdma_process_rx_one(sc, desc);
+			processed = emul_msgdma_process_rx_one(sc, desc);
 		}
-		if (ret <= 0)
+		if (processed <= 0)
 			break;
-		processed ++;
+
+		desc->transferred = htole32(processed);
+		control = le32toh(desc->control);
+		control &= ~CONTROL_OWN;
+		desc->control = htole32(control);
+		__asm __volatile("sync;sync;sync");
+
+		count++;
 		sc->cur_desc = emul_msgdma_next_desc(desc);
 	} while (sc->cur_desc);
 
 	intr_restore(intr);
 
-	if (processed > 0)
+	if (count > 0)
 		send_soft_irq(sc);
 }
 
