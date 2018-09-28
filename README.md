@@ -6,7 +6,13 @@ CHERI CPU used by this application is synthesized on Altera FPGA and prototyped 
 
 This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI processor.
 
-### Build under FreeBSD
+### Build FreeBSD with a beri_manager driver and bm (BERI Manager) application
+
+    $ git clone -b dma https://github.com/bukinr/freebsd-head
+    $ make -j4 TARGET=mips TARGET_ARCH=mips64 buildworld
+    $ make -j4 TARGET=mips TARGET_ARCH=mips64 KERNCONF=BERI_DE4_USBROOT buildkernel
+
+### Build device-model under FreeBSD
 
     $ sudo pkg install llvm-cheri
     $ git clone --recursive https://github.com/CTSRD-CHERI/device-model
@@ -32,7 +38,7 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
 
 ### Program device-model to DDR memory from a FreeBSD that runs on a 1st core. Start execution DM.
 
-    $ dd if=/var/tmp/dm.bin of=/dev/beri0 bs=512 conv=sync
+    $ bm -rRl /var/tmp/dm.bin
 
 ### Open a terminal to the device-model on your host (development) machine
 
