@@ -37,13 +37,16 @@
 
 #include "device-model.h"
 #include "fwd_device.h"
+#include "emul.h"
 #include "emul_msgdma.h"
+#include "emul_pci.h"
 
 #define	DM_FWD_NDEVICES		4
-#define	DM_EMUL_NDEVICES	4
+#define	DM_EMUL_NDEVICES	5
 
 struct msgdma_softc msgdma0_sc;
 struct msgdma_softc msgdma1_sc;
+struct pci_softc pci0_sc;
 
 const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
 	{ 0x0000, 0x20, MSGDMA0_BASE_CSR,  fwd_request },	/* Control Status Register */
@@ -53,10 +56,11 @@ const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
 };
 
 const struct emul_link emul_map[DM_EMUL_NDEVICES] = {
-	{ 0x4080, 0x20, emul_msgdma, &msgdma0_sc, MSGDMA_CSR },
-	{ 0x40a0, 0x20, emul_msgdma, &msgdma0_sc, MSGDMA_PF  },
-	{ 0x4000, 0x20, emul_msgdma, &msgdma1_sc, MSGDMA_CSR },
-	{ 0x4020, 0x20, emul_msgdma, &msgdma1_sc, MSGDMA_PF  },
+	{ 0x04080, 0x00020, emul_msgdma, &msgdma0_sc, MSGDMA_CSR },
+	{ 0x040a0, 0x00020, emul_msgdma, &msgdma0_sc, MSGDMA_PF  },
+	{ 0x04000, 0x00020, emul_msgdma, &msgdma1_sc, MSGDMA_CSR },
+	{ 0x04020, 0x00020, emul_msgdma, &msgdma1_sc, MSGDMA_PF  },
+	{ 0x10000, 0x20000, emul_pci, &pci0_sc, PCI_GENERIC },
 };
 
 static int

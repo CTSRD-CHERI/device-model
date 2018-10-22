@@ -43,6 +43,7 @@
 #include <dev/altera/fifo/a_api.h>
 
 #include "device-model.h"
+#include "emul.h"
 #include "emul_msgdma.h"
 
 #define	EMUL_MSGDMA_DEBUG

@@ -28,36 +28,22 @@
  * SUCH DAMAGE.
  */
 
-#ifndef	_EMUL_DEVICE_H_
-#define	_EMUL_DEVICE_H_
+#ifndef	_EMUL_H_
+#define	_EMUL_H_
 
-struct msgdma_csr {
-	uint32_t dma_status;
-	uint32_t dma_control;
+enum emul_device_type {
+	MSGDMA_CSR,
+	MSGDMA_PF,
+	PCI_GENERIC,
 };
 
-struct msgdma_pf {
-	uint32_t pf_control;
-	uint32_t pf_next_lo;
-	uint32_t pf_next_hi;
-	uint32_t pf_poll_freq;
-	uint32_t pf_status;
+struct emul_link {
+	uint64_t base_emul;
+	uint32_t size;
+	void (*request)(const struct emul_link *elink,
+	    struct epw_softc *sc, struct epw_request *req);
+	void *arg;
+	enum emul_device_type type;
 };
 
-struct msgdma_softc {
-	uint32_t state;
-	uint64_t fifo_base_mem;
-	uint64_t fifo_base_ctrl;
-	struct msgdma_csr csr;
-	struct msgdma_pf pf;
-	uint8_t poll_en;
-	uint8_t unit;
-	struct msgdma_desc *cur_desc;
-};
-
-void emul_msgdma(const struct emul_link *elink,
-    struct epw_softc *sc, struct epw_request *req);
-void emul_msgdma_fifo_intr(void *arg);
-void emul_msgdma_poll(struct msgdma_softc *sc);
-
-#endif	/* !_EMUL_DEVICE_H_ */
+#endif	/* !_EMUL_H_ */

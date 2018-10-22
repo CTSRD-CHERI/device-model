@@ -46,6 +46,7 @@
 
 #include "device-model.h"
 #include "fwd_device.h"
+#include "emul.h"
 #include "emul_msgdma.h"
 
 struct beripic_resource beripic1_res = {

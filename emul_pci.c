@@ -28,36 +28,59 @@
  * SUCH DAMAGE.
  */
 
-#ifndef	_EMUL_DEVICE_H_
-#define	_EMUL_DEVICE_H_
+#include <sys/cdefs.h>
+#include <sys/systm.h>
+#include <sys/endian.h>
 
-struct msgdma_csr {
-	uint32_t dma_status;
-	uint32_t dma_control;
-};
+#include <machine/cpuregs.h>
+#include <machine/cpufunc.h>
+#include <machine/frame.h>
+#include <machine/cache_mipsNN.h>
+#include <machine/cache_r4k.h>
 
-struct msgdma_pf {
-	uint32_t pf_control;
-	uint32_t pf_next_lo;
-	uint32_t pf_next_hi;
-	uint32_t pf_poll_freq;
-	uint32_t pf_status;
-};
+#include <mips/beri/beri_epw.h>
+#include <dev/altera/msgdma/msgdma.h>
+#include <dev/altera/fifo/a_api.h>
 
-struct msgdma_softc {
-	uint32_t state;
-	uint64_t fifo_base_mem;
-	uint64_t fifo_base_ctrl;
-	struct msgdma_csr csr;
-	struct msgdma_pf pf;
-	uint8_t poll_en;
-	uint8_t unit;
-	struct msgdma_desc *cur_desc;
-};
+#include "device-model.h"
+#include "emul.h"
+#include "emul_pci.h"
 
-void emul_msgdma(const struct emul_link *elink,
-    struct epw_softc *sc, struct epw_request *req);
-void emul_msgdma_fifo_intr(void *arg);
-void emul_msgdma_poll(struct msgdma_softc *sc);
+#define	EMUL_PCI_DEBUG
+#undef	EMUL_PCI_DEBUG
 
-#endif	/* !_EMUL_DEVICE_H_ */
+#ifdef	EMUL_PCI_DEBUG
+#define	dprintf(fmt, ...)	printf(fmt, ##__VA_ARGS__)
+#else
+#define	dprintf(fmt, ...)
+#endif
+
+void
+emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
+    struct epw_request *req)
+{
+	struct pci_softc *sc;
+	uint64_t offset;
+	uint64_t val;
+
+	sc = elink->arg;
+
+	offset = req->addr - elink->base_emul - EPW_WINDOW;
+
+	switch (req->data_len) {
+	case 8:
+		val = *(uint64_t *)req->data;
+		break;
+	case 4:
+		val = *(uint32_t *)req->data;
+		break;
+	case 2:
+		val = *(uint16_t *)req->data;
+		break;
+	case 1:
+		val = *(uint8_t *)req->data;
+		break;
+	}
+
+	dprintf("%s: offset %lx\n", __func__, offset);
+}
