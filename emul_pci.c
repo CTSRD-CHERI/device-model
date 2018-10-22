@@ -65,6 +65,8 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 
 	sc = elink->arg;
 
+	KASSERT(elink->type == PCI_GENERIC, ("Unknown device"));
+
 	offset = req->addr - elink->base_emul - EPW_WINDOW;
 
 	switch (req->data_len) {
@@ -82,5 +84,8 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		break;
 	}
 
-	dprintf("%s: offset %lx\n", __func__, offset);
+	if (req->is_write)
+		dprintf("%s: write to %lx val %lx\n", __func__, offset, val);
+	else
+		dprintf("%s: read from %lx\n", __func__, offset);
 }
