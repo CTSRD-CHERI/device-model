@@ -33,6 +33,7 @@
 
 struct pci_softc {
 	uint32_t state;
+	uint16_t cmd;
 };
 
 void emul_pci(const struct emul_link *elink,

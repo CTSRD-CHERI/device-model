@@ -39,8 +39,7 @@
 #include <machine/cache_r4k.h>
 
 #include <mips/beri/beri_epw.h>
-#include <dev/altera/msgdma/msgdma.h>
-#include <dev/altera/fifo/a_api.h>
+#include <dev/pci/pcireg.h>
 
 #include "device-model.h"
 #include "emul.h"
@@ -54,6 +53,65 @@
 #else
 #define	dprintf(fmt, ...)
 #endif
+
+static void
+emul_pci_write(struct pci_softc *sc, struct epw_request *req,
+    uint64_t offset, uint64_t val)
+{
+
+	dprintf("%s: write to %lx val %lx\n", __func__, offset, val);
+
+	switch (offset) {
+	case PCIR_COMMAND:
+		sc->cmd = val;
+		break;
+	}
+}
+
+static void
+emul_pci_read(struct pci_softc *sc, struct epw_request *req,
+    uint64_t offset)
+{
+	uint16_t val;
+
+	dprintf("%s: read from %lx\n", __func__, offset);
+
+	switch (offset) {
+	case PCIR_VENDOR:
+		val = 0x5566;
+		bcopy((void *)&val, (void *)&req->data[6], 2);
+
+		break;
+	case PCIR_DEVICE:
+		val = 0x5678;
+		bcopy((void *)&val, (void *)&req->data[4], 2);
+#if 0
+		req->data[0] = 1;
+		req->data[1] = 2;
+		req->data[2] = 3;
+		req->data[3] = 4;
+		req->data[4] = 5;
+		req->data[5] = 6;
+		req->data[6] = 7;
+		req->data[7] = 8;
+		req->data[8] = 9;
+#endif
+		break;
+	case PCIR_COMMAND:
+		bcopy((void *)&sc->cmd, (void *)&req->data[6], 2);
+		break;
+	case PCIR_STATUS:
+	case PCIR_REVID:
+	case PCIR_PROGIF:
+	case PCIR_SUBCLASS:
+	case PCIR_CLASS:
+	case PCIR_CACHELNSZ:
+	case PCIR_LATTIMER:
+	case PCIR_HDRTYPE:
+	case PCIR_BIST:
+		break;
+	}
+}
 
 void
 emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
@@ -85,7 +143,7 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 	}
 
 	if (req->is_write)
-		dprintf("%s: write to %lx val %lx\n", __func__, offset, val);
+		emul_pci_write(sc, req, offset, val);
 	else
-		dprintf("%s: read from %lx\n", __func__, offset);
+		emul_pci_read(sc, req, offset);
 }
