@@ -62,8 +62,42 @@ emul_pci_write(struct pci_softc *sc, struct epw_request *req,
 	dprintf("%s: write to %lx val %lx\n", __func__, offset, val);
 
 	switch (offset) {
+	case PCIR_VENDOR:
+		dprintf("%s: PCIR_VENDOR\n", __func__);
+		break;
+	case PCIR_DEVICE:
+		dprintf("%s: PCIR_DEVICE\n", __func__);
+		break;
 	case PCIR_COMMAND:
+		dprintf("%s: PCIR_COMMAND\n", __func__);
 		sc->cmd = val;
+		break;
+	case PCIR_STATUS:
+		dprintf("%s: PCIR_STATUS\n", __func__);
+		break;
+	case PCIR_REVID:
+		dprintf("%s: PCIR_REVID\n", __func__);
+		break;
+	case PCIR_PROGIF:
+		dprintf("%s: PCIR_PROGIF\n", __func__);
+		break;
+	case PCIR_SUBCLASS:
+		dprintf("%s: PCIR_SUBCLASS\n", __func__);
+		break;
+	case PCIR_CLASS:
+		dprintf("%s: PCIR_CLASS\n", __func__);
+		break;
+	case PCIR_CACHELNSZ:
+		dprintf("%s: PCIR_CACHELNSZ\n", __func__);
+		break;
+	case PCIR_LATTIMER:
+		dprintf("%s: PCIR_LATTIMER\n", __func__);
+		break;
+	case PCIR_HDRTYPE:
+		dprintf("%s: PCIR_HDRTYPE\n", __func__);
+		break;
+	case PCIR_BIST:
+		dprintf("%s: PCIR_BIST\n", __func__);
 		break;
 	}
 }
@@ -78,11 +112,12 @@ emul_pci_read(struct pci_softc *sc, struct epw_request *req,
 
 	switch (offset) {
 	case PCIR_VENDOR:
+		dprintf("%s: PCIR_VENDOR\n", __func__);
 		val = 0x8086;
 		bcopy((void *)&val, (void *)&req->data[6], 2);
-
 		break;
 	case PCIR_DEVICE:
+		dprintf("%s: PCIR_DEVICE\n", __func__);
 		val = 0x100F;
 		bcopy((void *)&val, (void *)&req->data[4], 2);
 #if 0
@@ -98,17 +133,35 @@ emul_pci_read(struct pci_softc *sc, struct epw_request *req,
 #endif
 		break;
 	case PCIR_COMMAND:
+		dprintf("%s: PCIR_COMMAND\n", __func__);
 		bcopy((void *)&sc->cmd, (void *)&req->data[2], 2);
 		break;
 	case PCIR_STATUS:
+		dprintf("%s: PCIR_STATUS\n", __func__);
+		break;
 	case PCIR_REVID:
+		dprintf("%s: PCIR_REVID\n", __func__);
+		break;
 	case PCIR_PROGIF:
+		dprintf("%s: PCIR_PROGIF\n", __func__);
+		break;
 	case PCIR_SUBCLASS:
+		dprintf("%s: PCIR_SUBCLASS\n", __func__);
+		break;
 	case PCIR_CLASS:
+		dprintf("%s: PCIR_CLASS\n", __func__);
+		break;
 	case PCIR_CACHELNSZ:
+		dprintf("%s: PCIR_CACHELNSZ\n", __func__);
+		break;
 	case PCIR_LATTIMER:
+		dprintf("%s: PCIR_LATTIMER\n", __func__);
+		break;
 	case PCIR_HDRTYPE:
+		dprintf("%s: PCIR_HDRTYPE\n", __func__);
+		break;
 	case PCIR_BIST:
+		dprintf("%s: PCIR_BIST\n", __func__);
 		break;
 	}
 }
