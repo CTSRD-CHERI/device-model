@@ -78,12 +78,12 @@ emul_pci_read(struct pci_softc *sc, struct epw_request *req,
 
 	switch (offset) {
 	case PCIR_VENDOR:
-		val = 0x5566;
+		val = 0x8086;
 		bcopy((void *)&val, (void *)&req->data[6], 2);
 
 		break;
 	case PCIR_DEVICE:
-		val = 0x5678;
+		val = 0x100F;
 		bcopy((void *)&val, (void *)&req->data[4], 2);
 #if 0
 		req->data[0] = 1;
@@ -98,7 +98,7 @@ emul_pci_read(struct pci_softc *sc, struct epw_request *req,
 #endif
 		break;
 	case PCIR_COMMAND:
-		bcopy((void *)&sc->cmd, (void *)&req->data[6], 2);
+		bcopy((void *)&sc->cmd, (void *)&req->data[2], 2);
 		break;
 	case PCIR_STATUS:
 	case PCIR_REVID:
