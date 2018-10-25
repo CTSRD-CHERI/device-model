@@ -30,38 +30,80 @@
  */
 
 #include <sys/cdefs.h>
+#if 0
 __FBSDID("$FreeBSD$");
+#endif
+#include <sys/param.h>
 
 #include <sys/types.h>
 #ifndef WITHOUT_CAPSICUM
 #include <sys/capsicum.h>
 #endif
 #include <sys/limits.h>
+#if 0
 #include <sys/ioctl.h>
 #include <sys/uio.h>
 #include <net/ethernet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#else
+#include <sys/uio.h>
+#include <net/ethernet.h>
+#endif
 
+#if 0
 #include <err.h>
+#endif
+#if 0
 #include <errno.h>
+#else
+#include <sys/errno.h>
+#endif
+#if 0
 #include <fcntl.h>
 #include <md5.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if 0
 #include <sysexits.h>
+#endif
 #include <unistd.h>
+#if 0
 #include <pthread.h>
 #include <pthread_np.h>
+#endif
 
+#if 0
 #include "e1000_regs.h"
 #include "e1000_defines.h"
 #include "mii.h"
+#else
+#include <dev/e1000/e1000_regs.h>
+#include <dev/e1000/e1000_defines.h>
+#include <dev/mii/mii.h>
+#endif
 
+#if 0
 #include "bhyverun.h"
+#endif
 #include "pci_emul.h"
+#if 1
 #include "mevent.h"
+#endif
+
+#include "bhyve_support.h"
+#include <sys/linker_set.h>
+#define	TH_FIN		0x01
+#define	TH_SYN		0x02
+#define	TH_RST		0x04
+#define	TH_PUSH		0x08
+#define	TH_ACK		0x10
+#define	TH_URG		0x20
+#define	TH_ECE		0x40
+#define	TH_CWR		0x80
+#define	TH_FLAGS	(TH_FIN|TH_SYN|TH_RST|TH_PUSH|TH_ACK|TH_URG|TH_ECE|TH_CWR)
 
 /* Hardware/register definitions XXX: move some to common code. */
 #define E82545_VENDOR_ID_INTEL			0x8086
@@ -224,8 +266,13 @@ struct ck_info {
  * Debug printf
  */
 static int e82545_debug = 0;
+#if 0
 #define DPRINTF(msg,params...) if (e82545_debug) fprintf(stderr, "e82545: " msg, params)
 #define WPRINTF(msg,params...) fprintf(stderr, "e82545: " msg, params)
+#else
+#define DPRINTF(msg,params...) if (e82545_debug) printf("e82545: " msg, params)
+#define WPRINTF(msg,params...) printf("e82545: " msg, params)
+#endif
 
 #define	MIN(a,b) (((a)<(b))?(a):(b))
 #define	MAX(a,b) (((a)>(b))?(a):(b))
@@ -243,7 +290,9 @@ struct e82545_softc {
 	struct vmctx	*esc_ctx;
 	struct mevent   *esc_mevp;
 	struct mevent   *esc_mevpitr;
+#if 0
 	pthread_mutex_t	esc_mtx;
+#endif
 	struct ether_addr esc_mac;
 	int		esc_tapfd;
 
@@ -268,8 +317,10 @@ struct e82545_softc {
 	/* Transmit */
 	union e1000_tx_udesc *esc_txdesc;
 	struct e1000_context_desc esc_txctx;
+#if 0
 	pthread_t	esc_tx_tid;
 	pthread_cond_t	esc_tx_cond;
+#endif
 	int		esc_tx_enabled;
 	int		esc_tx_active;
 	uint32_t	esc_TXCW;	/* x0178 transmit config */
@@ -294,7 +345,9 @@ struct e82545_softc {
 	
 	/* Receive */
 	struct e1000_rx_desc *esc_rxdesc;
+#if 0
 	pthread_cond_t	esc_rx_cond;
+#endif
 	int		esc_rx_enabled;
 	int		esc_rx_active;
 	int		esc_rx_loopback;
@@ -351,11 +404,17 @@ struct e82545_softc {
 static void e82545_reset(struct e82545_softc *sc, int dev);
 static void e82545_rx_enable(struct e82545_softc *sc);
 static void e82545_rx_disable(struct e82545_softc *sc);
+#if 0
 static void e82545_tap_callback(int fd, enum ev_type type, void *param);
+#endif
 static void e82545_tx_start(struct e82545_softc *sc);
 static void e82545_tx_enable(struct e82545_softc *sc);
 static void e82545_tx_disable(struct e82545_softc *sc);
 
+int e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
+    uint16_t dsize, uint16_t *rhead, int *tdwb);
+
+#if 0
 static inline int
 e82545_size_stat_index(uint32_t size)
 {
@@ -368,6 +427,7 @@ e82545_size_stat_index(uint32_t size)
 		return (ffs(size) - 6);
 	}
 }
+#endif
 
 static void
 e82545_init_eeprom(struct e82545_softc *sc)
@@ -545,24 +605,32 @@ e82545_eecd_strobe(struct e82545_softc *sc)
 	}
 }
 
+#if 0
 static void
 e82545_itr_callback(int fd, enum ev_type type, void *param)
 {
 	uint32_t new;
 	struct e82545_softc *sc = param;
 
+#if 0
 	pthread_mutex_lock(&sc->esc_mtx);
+#endif
 	new = sc->esc_ICR & sc->esc_IMS;
 	if (new && !sc->esc_irq_asserted) {
 		DPRINTF("itr callback: lintr assert %x\r\n", new);
 		sc->esc_irq_asserted = 1;
 		pci_lintr_assert(sc->esc_pi);
 	} else {
+#if 0
 		mevent_delete(sc->esc_mevpitr);
+#endif
 		sc->esc_mevpitr = NULL;
 	}
+#if 0
 	pthread_mutex_unlock(&sc->esc_mtx);
+#endif
 }
+#endif
 
 static void
 e82545_icr_assert(struct e82545_softc *sc, uint32_t bits)
@@ -587,11 +655,13 @@ e82545_icr_assert(struct e82545_softc *sc, uint32_t bits)
 		DPRINTF("icr assert: lintr assert %x\r\n", new);
 		sc->esc_irq_asserted = 1;
 		pci_lintr_assert(sc->esc_pi);
+#if 0
 		if (sc->esc_ITR != 0) {
 			sc->esc_mevpitr = mevent_add(
 			    (sc->esc_ITR + 3905) / 3906,  /* 256ns -> 1ms */
 			    EVF_TIMER, e82545_itr_callback, sc);
 		}
+#endif
 	}
 }
 
@@ -615,11 +685,13 @@ e82545_ims_change(struct e82545_softc *sc, uint32_t bits)
 		DPRINTF("ims change: lintr assert %x\n\r", new);
 		sc->esc_irq_asserted = 1;
 		pci_lintr_assert(sc->esc_pi);
+#if 0
 		if (sc->esc_ITR != 0) {
 			sc->esc_mevpitr = mevent_add(
 			    (sc->esc_ITR + 3905) / 3906,  /* 256ns -> 1ms */
 			    EVF_TIMER, e82545_itr_callback, sc);
 		}
+#endif
 	}
 }
 
@@ -804,7 +876,8 @@ e82545_tx_ctl(struct e82545_softc *sc, uint32_t val)
 	sc->esc_TCTL = val & ~0xFE800005;
 }
 
-int
+#if 0
+static int
 e82545_bufsz(uint32_t rctl)
 {
 
@@ -833,7 +906,9 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	uint32_t cause = 0;
 	uint16_t *tp, tag, head;
 
+#if 0
 	pthread_mutex_lock(&sc->esc_mtx);
+#endif
 	DPRINTF("rx_run: head %x, tail %x\r\n", sc->esc_RDH, sc->esc_RDT);
 
 	if (!sc->esc_rx_enabled || sc->esc_rx_loopback) {
@@ -858,7 +933,9 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	}
 
 	sc->esc_rx_active = 1;
+#if 0
 	pthread_mutex_unlock(&sc->esc_mtx);
+#endif
 
 	for (lim = size / 4; lim > 0 && left >= maxpktdesc; lim -= n) {
 
@@ -935,10 +1012,14 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	}
 
 done:
+#if 0
 	pthread_mutex_lock(&sc->esc_mtx);
+#endif
 	sc->esc_rx_active = 0;
+#if 0
 	if (sc->esc_rx_enabled == 0)
 		pthread_cond_signal(&sc->esc_rx_cond);
+#endif
 
 	sc->esc_RDH = head;
 	/* Respect E1000_RCTL_RDMTS */
@@ -950,8 +1031,11 @@ done:
 		e82545_icr_assert(sc, cause);
 done1:
 	DPRINTF("rx_run done: head %x, tail %x\r\n", sc->esc_RDH, sc->esc_RDT);
+#if 0
 	pthread_mutex_unlock(&sc->esc_mtx);
+#endif
 }
+#endif
 
 static uint16_t
 e82545_carry(uint32_t sum)
@@ -971,7 +1055,7 @@ e82545_buf_checksum(uint8_t *buf, int len)
 
 	/* Checksum all the pairs of bytes first... */
 	for (i = 0; i < (len & ~1U); i += 2)
-		sum += *((u_int16_t *)(buf + i));
+		sum += *((uint16_t *)(buf + i));
 
 	/*
 	 * If there's a single byte left over, checksum it, too.
@@ -1001,7 +1085,11 @@ e82545_iov_checksum(struct iovec *iov, int iovcnt, int off, int len)
 	odd = 0;
 	while (len > 0 && iovcnt > 0) {
 		now = MIN(len, iov->iov_len - off);
+#if 0
 		s = e82545_buf_checksum(iov->iov_base + off, now);
+#else
+		s = e82545_buf_checksum((void *)((uint64_t)iov->iov_base + off), now);
+#endif
 		sum += odd ? (s << 8) : s;
 		odd ^= (now & 1);
 		len -= now;
@@ -1016,7 +1104,7 @@ e82545_iov_checksum(struct iovec *iov, int iovcnt, int off, int len)
 /*
  * Return the transmit descriptor type.
  */
-int
+static int
 e82545_txdesc_type(uint32_t lower)
 {
 	int type;
@@ -1046,10 +1134,12 @@ static void
 e82545_transmit_backend(struct e82545_softc *sc, struct iovec *iov, int iovcnt)
 {
 
+#if 0
 	if (sc->esc_tapfd == -1)
 		return;
 
 	(void) writev(sc->esc_tapfd, iov, iovcnt);
+#endif
 }
 
 static void
@@ -1067,7 +1157,7 @@ e82545_transmit_done(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 	}
 }
 
-static int
+int
 e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
     uint16_t dsize, uint16_t *rhead, int *tdwb)
 {
@@ -1233,7 +1323,11 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 		    left -= now, hdrp += now) {
 			now = MIN(left, iov->iov_len);
 			memcpy(hdrp, iov->iov_base, now);
+#if 0
 			iov->iov_base += now;
+#else
+			iov->iov_base = (void *)((uint64_t)iov->iov_base + now);
+#endif
 			iov->iov_len -= now;
 			if (iov->iov_len == 0) {
 				iov++;
@@ -1304,7 +1398,11 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 		/* Include respective part of payload IOV. */
 		for (nleft = now; pv < iovcnt && nleft > 0; nleft -= nnow) {
 			nnow = MIN(nleft, iov[pv].iov_len - pvoff);
+#if 0
 			tiov[tiovcnt].iov_base = iov[pv].iov_base + pvoff;
+#else
+			tiov[tiovcnt].iov_base = (void *)((uint64_t)iov[pv].iov_base + pvoff);
+#endif
 			tiov[tiovcnt++].iov_len = nnow;
 			if (pvoff + nnow == iov[pv].iov_len) {
 				pv++;
@@ -1369,6 +1467,7 @@ done:
 	return (desc + 1);
 }
 
+#if 0
 static void
 e82545_tx_run(struct e82545_softc *sc)
 {
@@ -1382,7 +1481,9 @@ e82545_tx_run(struct e82545_softc *sc)
 	DPRINTF("tx_run: head %x, rhead %x, tail %x\r\n",
 	    sc->esc_TDH, sc->esc_TDHr, sc->esc_TDT);
 
+#if 0
 	pthread_mutex_unlock(&sc->esc_mtx);
+#endif
 	rhead = head;
 	tdwb = 0;
 	for (lim = size / 4; sc->esc_tx_enabled && lim > 0; lim -= sent) {
@@ -1391,7 +1492,9 @@ e82545_tx_run(struct e82545_softc *sc)
 			break;
 		head = rhead;
 	}
+#if 0
 	pthread_mutex_lock(&sc->esc_mtx);
+#endif
 
 	sc->esc_TDH = head;
 	sc->esc_TDHr = rhead;
@@ -1406,21 +1509,27 @@ e82545_tx_run(struct e82545_softc *sc)
 	DPRINTF("tx_run done: head %x, rhead %x, tail %x\r\n",
 	    sc->esc_TDH, sc->esc_TDHr, sc->esc_TDT);
 }
+#endif
 
+#if 0
 static _Noreturn void *
 e82545_tx_thread(void *param)
 {
 	struct e82545_softc *sc = param;
 
+#if 0
 	pthread_mutex_lock(&sc->esc_mtx);
+#endif
 	for (;;) {
 		while (!sc->esc_tx_enabled || sc->esc_TDHr == sc->esc_TDT) {
 			if (sc->esc_tx_enabled && sc->esc_TDHr != sc->esc_TDT)
 				break;
 			sc->esc_tx_active = 0;
+#if 0
 			if (sc->esc_tx_enabled == 0)
 				pthread_cond_signal(&sc->esc_tx_cond);
 			pthread_cond_wait(&sc->esc_tx_cond, &sc->esc_mtx);
+#endif
 		}
 		sc->esc_tx_active = 1;
 
@@ -1428,13 +1537,16 @@ e82545_tx_thread(void *param)
 		e82545_tx_run(sc);
 	}
 }
+#endif
 
 static void
 e82545_tx_start(struct e82545_softc *sc)
 {
 
+#if 0
 	if (sc->esc_tx_active == 0)
 		pthread_cond_signal(&sc->esc_tx_cond);
+#endif
 }
 
 static void
@@ -1449,8 +1561,10 @@ e82545_tx_disable(struct e82545_softc *sc)
 {
 
 	sc->esc_tx_enabled = 0;
+#if 0
 	while (sc->esc_tx_active)
 		pthread_cond_wait(&sc->esc_tx_cond, &sc->esc_mtx);
+#endif
 }
 
 static void
@@ -1465,8 +1579,10 @@ e82545_rx_disable(struct e82545_softc *sc)
 {
 
 	sc->esc_rx_enabled = 0;
+#if 0
 	while (sc->esc_rx_active)
 		pthread_cond_wait(&sc->esc_rx_cond, &sc->esc_mtx);
+#endif
 }
 
 static void
@@ -2021,7 +2137,9 @@ e82545_write(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 
 	sc = pi->pi_arg;
 
+#if 0
 	pthread_mutex_lock(&sc->esc_mtx);
+#endif
 
 	switch (baridx) {
 	case E82545_BAR_IO:
@@ -2058,7 +2176,9 @@ e82545_write(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 			baridx, offset, value, size);
 	}
 
+#if 0
 	pthread_mutex_unlock(&sc->esc_mtx);
+#endif
 }
 
 static uint64_t
@@ -2072,7 +2192,9 @@ e82545_read(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 	sc = pi->pi_arg;
 	retval = 0;
 
+#if 0
 	pthread_mutex_lock(&sc->esc_mtx);
+#endif
 
 	switch (baridx) {
 	case E82545_BAR_IO:
@@ -2112,7 +2234,9 @@ e82545_read(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 		break;
 	}
 
+#if 0
 	pthread_mutex_unlock(&sc->esc_mtx);
+#endif
 
 	return (retval);
 }
@@ -2205,6 +2329,7 @@ e82545_reset(struct e82545_softc *sc, int drvr)
 	sc->esc_TXDCTL = 0;
 }
 
+#if 0
 static void
 e82545_open_tap(struct e82545_softc *sc, char *opts)
 {
@@ -2254,7 +2379,9 @@ e82545_open_tap(struct e82545_softc *sc, char *opts)
 		sc->esc_tapfd = -1;
 	}
 }
+#endif
 
+#if 0
 static int
 e82545_parsemac(char *mac_str, uint8_t *mac_addr)
 {
@@ -2267,25 +2394,34 @@ e82545_parsemac(char *mac_str, uint8_t *mac_addr)
 		ea = ether_aton(mac_str);
 		if (ea == NULL || ETHER_IS_MULTICAST(ea->octet) ||
 		    memcmp(ea->octet, zero_addr, ETHER_ADDR_LEN) == 0) {
+#if 0
 			fprintf(stderr, "Invalid MAC %s\n", mac_str);
+#else
+			printf("Invalid MAC %s\n", mac_str);
+#endif
 			return (1);
 		} else
 			memcpy(mac_addr, ea->octet, ETHER_ADDR_LEN);
 	}
 	return (0);
 }
+#endif
 
 static int
 e82545_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 {
 	DPRINTF("Loading with options: %s\r\n", opts);
 
+#if 0
 	MD5_CTX mdctx;
+#endif
 	unsigned char digest[16];
 	char nstr[80];
 	struct e82545_softc *sc;
+#if 0
 	char *devname;
 	char *vtopts;
+#endif
 	int mac_provided;
 
 	/* Setup our softc */
@@ -2295,13 +2431,17 @@ e82545_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 	sc->esc_pi = pi;
 	sc->esc_ctx = ctx;
 
+#if 0
 	pthread_mutex_init(&sc->esc_mtx, NULL);
 	pthread_cond_init(&sc->esc_rx_cond, NULL);
 	pthread_cond_init(&sc->esc_tx_cond, NULL);
 	pthread_create(&sc->esc_tx_tid, NULL, e82545_tx_thread, sc);
+#endif
 	snprintf(nstr, sizeof(nstr), "e82545-%d:%d tx", pi->pi_slot,
 	    pi->pi_func);
+#if 0
         pthread_set_name_np(sc->esc_tx_tid, nstr);
+#endif
 
 	pci_set_cfgdata16(pi, PCIR_DEVICE, E82545_DEV_ID_82545EM_COPPER);
 	pci_set_cfgdata16(pi, PCIR_VENDOR, E82545_VENDOR_ID_INTEL);
@@ -2330,6 +2470,7 @@ e82545_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 	 */
 	mac_provided = 0;
 	sc->esc_tapfd = -1;
+#if 0
 	if (opts != NULL) {
 		int err;
 
@@ -2351,18 +2492,25 @@ e82545_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 
 		free(devname);
 	}
+#endif
 
 	/*
 	 * The default MAC address is the standard NetApp OUI of 00-a0-98,
 	 * followed by an MD5 of the PCI slot/func number and dev name
 	 */
 	if (!mac_provided) {
+#if 0
 		snprintf(nstr, sizeof(nstr), "%d-%d-%s", pi->pi_slot,
 		    pi->pi_func, vmname);
 
 		MD5Init(&mdctx);
 		MD5Update(&mdctx, nstr, strlen(nstr));
 		MD5Final(digest, &mdctx);
+#else
+		digest[0] = 0x01;
+		digest[1] = 0x02;
+		digest[2] = 0x03;
+#endif
 
 		sc->esc_mac.octet[0] = 0x00;
 		sc->esc_mac.octet[1] = 0xa0;

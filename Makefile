@@ -9,6 +9,7 @@ LDSCRIPT =	${.CURDIR}/ldscript
 
 OBJECTS =	alloc.o						\
 		bhyve/pci_emul.o				\
+		bhyve/pci_e82545.o				\
 		bhyve_support.o					\
 		device-model.o					\
 		emul_msgdma.o					\
@@ -48,7 +49,7 @@ WARNFLAGS =			\
 
 CFLAGS = -target mips64 -march=mips64 			\
 	-G0 -O -g -nostdinc -mno-abicalls -msoft-float	\
-	-fwrapv -fno-builtin-printf ${WARNFLAGS}
+	-fwrapv -fno-builtin-printf ${WARNFLAGS} -DWITHOUT_CAPSICUM=1
 
 all:	compile link binary
 

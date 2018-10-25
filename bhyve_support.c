@@ -102,3 +102,10 @@ void
 lpc_pirq_routed(void)
 {
 }
+
+void *
+paddr_guest2host(struct vmctx *ctx, uintptr_t gaddr, size_t len)
+{
+
+	return (NULL);
+}
