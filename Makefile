@@ -9,6 +9,7 @@ LDSCRIPT =	${.CURDIR}/ldscript
 
 OBJECTS =	alloc.o						\
 		bhyve/pci_emul.o				\
+		bhyve_support.o					\
 		device-model.o					\
 		emul_msgdma.o					\
 		emul_pci.o					\
@@ -46,7 +47,7 @@ WARNFLAGS =			\
 	-Wmissing-include-dirs
 
 CFLAGS = -target mips64 -march=mips64 			\
-	-O -g -nostdinc -mno-abicalls -msoft-float	\
+	-G0 -O -g -nostdinc -mno-abicalls -msoft-float	\
 	-fwrapv -fno-builtin-printf ${WARNFLAGS}
 
 all:	compile link binary
@@ -59,3 +60,4 @@ llvm-objdump:
 .include "${.CURDIR}/osfive/mk/link.mk"
 .include "${.CURDIR}/osfive/mk/binutils.mk"
 .include "${.CURDIR}/osfive/mk/clean.mk"
+.include "${.CURDIR}/osfive/mk/info.mk"
