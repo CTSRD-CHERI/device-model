@@ -100,6 +100,55 @@ emul_pci_write(struct pci_softc *sc, struct epw_request *req,
 		dprintf("%s: PCIR_BIST\n", __func__);
 		break;
 	}
+
+	switch (offset) {
+	case PCIR_BAR(0):
+		dprintf("%s: PCIR_BAR(0)\n", __func__);
+		break;
+	case PCIR_BAR(1):
+		dprintf("%s: PCIR_BAR(1)\n", __func__);
+		break;
+	case PCIR_BAR(2):
+		dprintf("%s: PCIR_BAR(2)\n", __func__);
+		break;
+	case PCIR_BAR(3):
+		dprintf("%s: PCIR_BAR(3)\n", __func__);
+		break;
+	case PCIR_BAR(4):
+		dprintf("%s: PCIR_BAR(4)\n", __func__);
+		break;
+	case PCIR_BAR(5):
+		dprintf("%s: PCIR_BAR(5)\n", __func__);
+		break;
+	case PCIR_CIS:
+		dprintf("%s: PCIR_CIS\n", __func__);
+		break;
+	case PCIR_SUBVEND_0:
+		dprintf("%s: PCIR_SUBVEND_0\n", __func__);
+		break;
+	case PCIR_SUBDEV_0:
+		dprintf("%s: PCIR_SUBDEV_0\n", __func__);
+		break;
+	case PCIR_BIOS:
+		dprintf("%s: PCIR_BIOS\n", __func__);
+		break;
+	case PCIR_CAP_PTR:
+		dprintf("%s: PCIR_CAP_PTR\n", __func__);
+		break;
+	case PCIR_INTLINE:
+		dprintf("%s: PCIR_INTLINE\n", __func__);
+		break;
+	case PCIR_INTPIN:
+		dprintf("%s: PCIR_INTPIN\n", __func__);
+		break;
+	case PCIR_MINGNT:
+		dprintf("%s: PCIR_MINGNT\n", __func__);
+		break;
+	case PCIR_MAXLAT:
+		dprintf("%s: PCIR_MAXLAT\n", __func__);
+		break;
+	}
+	
 }
 
 static void
@@ -109,6 +158,8 @@ emul_pci_read(struct pci_softc *sc, struct epw_request *req,
 	uint16_t val;
 
 	dprintf("%s: read from %lx\n", __func__, offset);
+
+	bzero((void *)&req->data[0], 32);
 
 	switch (offset) {
 	case PCIR_VENDOR:
@@ -162,6 +213,54 @@ emul_pci_read(struct pci_softc *sc, struct epw_request *req,
 		break;
 	case PCIR_BIST:
 		dprintf("%s: PCIR_BIST\n", __func__);
+		break;
+	}
+
+	switch (offset) {
+	case PCIR_BAR(0):
+		dprintf("%s: PCIR_BAR(0)\n", __func__);
+		break;
+	case PCIR_BAR(1):
+		dprintf("%s: PCIR_BAR(1)\n", __func__);
+		break;
+	case PCIR_BAR(2):
+		dprintf("%s: PCIR_BAR(2)\n", __func__);
+		break;
+	case PCIR_BAR(3):
+		dprintf("%s: PCIR_BAR(3)\n", __func__);
+		break;
+	case PCIR_BAR(4):
+		dprintf("%s: PCIR_BAR(4)\n", __func__);
+		break;
+	case PCIR_BAR(5):
+		dprintf("%s: PCIR_BAR(5)\n", __func__);
+		break;
+	case PCIR_CIS:
+		dprintf("%s: PCIR_CIS\n", __func__);
+		break;
+	case PCIR_SUBVEND_0:
+		dprintf("%s: PCIR_SUBVEND_0\n", __func__);
+		break;
+	case PCIR_SUBDEV_0:
+		dprintf("%s: PCIR_SUBDEV_0\n", __func__);
+		break;
+	case PCIR_BIOS:
+		dprintf("%s: PCIR_BIOS\n", __func__);
+		break;
+	case PCIR_CAP_PTR:
+		dprintf("%s: PCIR_CAP_PTR\n", __func__);
+		break;
+	case PCIR_INTLINE:
+		dprintf("%s: PCIR_INTLINE\n", __func__);
+		break;
+	case PCIR_INTPIN:
+		dprintf("%s: PCIR_INTPIN\n", __func__);
+		break;
+	case PCIR_MINGNT:
+		dprintf("%s: PCIR_MINGNT\n", __func__);
+		break;
+	case PCIR_MAXLAT:
+		dprintf("%s: PCIR_MAXLAT\n", __func__);
 		break;
 	}
 }
