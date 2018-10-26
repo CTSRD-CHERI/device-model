@@ -9,3 +9,4 @@ struct vmctx {
 };
 
 void *paddr_guest2host(struct vmctx *ctx, uintptr_t addr, size_t len);
+int bhyve_init_pci(void);

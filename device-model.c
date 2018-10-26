@@ -30,6 +30,7 @@
 
 #include <sys/cdefs.h>
 #include <sys/systm.h>
+#include <sys/malloc.h>
 
 #include <machine/cpuregs.h>
 
@@ -40,6 +41,7 @@
 #include "emul.h"
 #include "emul_msgdma.h"
 #include "emul_pci.h"
+#include "bhyve_support.h"
 
 #define	DM_FWD_NDEVICES		4
 #define	DM_EMUL_NDEVICES	5
@@ -99,6 +101,8 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 void
 dm_init(struct epw_softc *sc)
 {
+	uintptr_t malloc_base;
+	int malloc_size;
 
 	msgdma0_sc.fifo_base_mem = FIFO2_BASE_MEM;
 	msgdma0_sc.fifo_base_ctrl = FIFO2_BASE_CTRL;
@@ -107,6 +111,14 @@ dm_init(struct epw_softc *sc)
 	msgdma1_sc.fifo_base_mem = FIFO3_BASE_MEM;
 	msgdma1_sc.fifo_base_ctrl = FIFO3_BASE_CTRL;
 	msgdma1_sc.unit = 1;
+
+	malloc_base = 0xffffffffb0000000 + 0x01000000/2;
+	malloc_size = 0x01000000/2;
+
+	fl_init();   
+	fl_add_region(malloc_base, malloc_size);
+
+	bhyve_init_pci();
 }
 
 void

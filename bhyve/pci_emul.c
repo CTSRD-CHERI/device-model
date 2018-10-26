@@ -66,6 +66,8 @@ __FBSDID("$FreeBSD$");
 #include "pci_irq.h"
 #include "pci_lpc.h"
 
+#include "bhyve_support.h"
+
 #define CONF1_ADDR_PORT    0x0cf8
 #define CONF1_DATA_PORT    0x0cfc
 
@@ -2161,3 +2163,35 @@ struct pci_devemu pci_dummy = {
 PCI_EMUL_SET(pci_dummy);
 
 #endif /* PCI_EMUL_TEST */
+
+int
+bhyve_init_pci(void)
+{
+	struct vmctx *ctx;
+	int bnum, snum, fnum;
+	struct businfo *bi;
+	struct slotinfo *si;
+	char *name;
+
+	ctx = malloc(sizeof(struct vmctx));
+
+	bnum = 0;
+	snum = 0;
+	fnum = 0;
+
+	pci_businfo[bnum] = calloc(1, sizeof(struct businfo));
+	bi = pci_businfo[bnum];
+	si = &bi->slotinfo[snum];
+
+	name = malloc(16);
+	sprintf(name, "e1000");
+	si->si_funcs[fnum].fi_name = name;
+
+#if 0
+	si->si_funcs[fnum].fi_param = config;
+#endif
+
+	init_pci(ctx);
+
+	return (0);
+}
