@@ -31,9 +31,7 @@
 #ifndef _MEM_H_
 #define	_MEM_H_
 
-#if 0
 #include <sys/linker_set.h>
-#endif
 
 struct vmctx;
 

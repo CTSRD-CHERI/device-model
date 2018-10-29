@@ -31,9 +31,7 @@
 #ifndef _INOUT_H_
 #define	_INOUT_H_
 
-#if 0
 #include <sys/linker_set.h>
-#endif
 
 struct vmctx;
 struct vm_exit;
