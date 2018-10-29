@@ -2172,6 +2172,11 @@ bhyve_init_pci(void)
 	struct businfo *bi;
 	struct slotinfo *si;
 	char *name;
+	int vcpu;
+	int in;
+	uint32_t val;
+	int bytes;
+	int coff;
 
 	ctx = malloc(sizeof(struct vmctx));
 
@@ -2192,6 +2197,17 @@ bhyve_init_pci(void)
 #endif
 
 	init_pci(ctx);
+
+	/* Test request */
+
+	vcpu = 0;
+	in = 1;
+	bytes = 2;
+	coff = 0x0;
+
+	pci_cfgrw(ctx, vcpu, in, bnum, snum, fnum, coff, bytes, (uint32_t *)&val);
+
+	printf("val 0x%x\n", val);
 
 	return (0);
 }
