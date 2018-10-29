@@ -44,6 +44,7 @@
 #include "device-model.h"
 #include "emul.h"
 #include "emul_pci.h"
+#include "bhyve_support.h"
 
 #define	EMUL_PCI_DEBUG
 #undef	EMUL_PCI_DEBUG
@@ -298,4 +299,17 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		emul_pci_write(sc, req, offset, val);
 	else
 		emul_pci_read(sc, req, offset);
+}
+
+int
+emul_pci_init(struct pci_softc *sc)
+{
+
+	sc->ctx = malloc(sizeof(struct vmctx));
+	if (sc->ctx == NULL)
+		return (-1);
+
+	bhyve_init_pci(sc->ctx);
+
+	return (0);
 }

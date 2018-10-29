@@ -2165,9 +2165,8 @@ PCI_EMUL_SET(pci_dummy);
 #endif /* PCI_EMUL_TEST */
 
 int
-bhyve_init_pci(void)
+bhyve_init_pci(struct vmctx *ctx)
 {
-	struct vmctx *ctx;
 	int bnum, snum, fnum;
 	struct businfo *bi;
 	struct slotinfo *si;
@@ -2177,8 +2176,6 @@ bhyve_init_pci(void)
 	uint32_t val;
 	int bytes;
 	int coff;
-
-	ctx = malloc(sizeof(struct vmctx));
 
 	bnum = 0;
 	snum = 0;

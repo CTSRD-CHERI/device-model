@@ -118,7 +118,7 @@ dm_init(struct epw_softc *sc)
 	fl_init();   
 	fl_add_region(malloc_base, malloc_size);
 
-	bhyve_init_pci();
+	emul_pci_init(&pci0_sc);
 }
 
 void

@@ -32,11 +32,13 @@
 #define	_EMUL_PCI_H_
 
 struct pci_softc {
+	struct vmctx *ctx;
 	uint32_t state;
 	uint16_t cmd;
 };
 
 void emul_pci(const struct emul_link *elink,
     struct epw_softc *sc, struct epw_request *req);
+int emul_pci_init(struct pci_softc *sc);
 
 #endif	/* !_EMUL_PCI_H_ */
