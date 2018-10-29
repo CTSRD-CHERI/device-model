@@ -42,16 +42,25 @@
 void
 pci_irq_assert(struct pci_devinst *pi)
 {
+
+	printf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
+	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
 }
 
 void
 pci_irq_deassert(struct pci_devinst *pi)
 {
+
+	printf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
+	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
 }
 
 int
 register_mem(struct mem_range *memp)
 {
+
+	printf("%s: name %s base %lx size %lx\n",
+	    __func__, memp->name, memp->base, memp->size);
 
 	return (0);
 }
@@ -60,12 +69,18 @@ int
 unregister_mem(struct mem_range *memp)
 {
 
+	printf("%s: name %s base %lx size %lx\n",
+	    __func__, memp->name, memp->base, memp->size);
+
 	return (0);
 }
 
 int
 register_mem_fallback(struct mem_range *memp)
 {
+
+	printf("%s: name %s base %lx size %lx\n",
+	    __func__, memp->name, memp->base, memp->size);
 
 	return (0);
 }
@@ -74,12 +89,18 @@ int
 register_inout(struct inout_port *iop)
 {
 
+	printf("%s: name %s port %d size %d\n",
+	    __func__, iop->name, iop->port, iop->size);
+
 	return (0);
 }
 
 int
 unregister_inout(struct inout_port *iop)
 {
+
+	printf("%s: name %s port %d size %d\n",
+	    __func__, iop->name, iop->port, iop->size);
 
 	return (0);
 }
@@ -88,6 +109,9 @@ int
 pirq_alloc_pin(struct pci_devinst *pi)
 {
 
+	printf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
+	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
+
 	return (0);
 }
 
@@ -95,17 +119,23 @@ int
 pirq_irq(int pin)
 {
 
+	printf("%s: pin %d\n", __func__, pin);
+
 	return (0);
 }
 
 void
 lpc_pirq_routed(void)
 {
+
+	printf("%s\n", __func__);
 }
 
 void *
 paddr_guest2host(struct vmctx *ctx, uintptr_t gaddr, size_t len)
 {
+
+	printf("%s: gaddr %lx len %d\n", __func__, gaddr, len);
 
 	return (NULL);
 }
