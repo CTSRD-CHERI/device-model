@@ -304,12 +304,17 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 int
 emul_pci_init(struct pci_softc *sc)
 {
+	uint32_t val;
 
 	sc->ctx = malloc(sizeof(struct vmctx));
 	if (sc->ctx == NULL)
 		return (-1);
 
-	bhyve_init_pci(sc->ctx);
+	bhyve_pci_init(sc->ctx);
+
+	/* Test request */
+	bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, 0x00, 2, (uint32_t *)&val);
+	printf("val 0x%x\n", val);
 
 	return (0);
 }

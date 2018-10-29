@@ -2165,17 +2165,12 @@ PCI_EMUL_SET(pci_dummy);
 #endif /* PCI_EMUL_TEST */
 
 int
-bhyve_init_pci(struct vmctx *ctx)
+bhyve_pci_init(struct vmctx *ctx)
 {
 	int bnum, snum, fnum;
 	struct businfo *bi;
 	struct slotinfo *si;
 	char *name;
-	int vcpu;
-	int in;
-	uint32_t val;
-	int bytes;
-	int coff;
 
 	bnum = 0;
 	snum = 0;
@@ -2195,16 +2190,16 @@ bhyve_init_pci(struct vmctx *ctx)
 
 	init_pci(ctx);
 
-	/* Test request */
+	return (0);
+}
+
+void
+bhyve_pci_cfgrw(struct vmctx *ctx, int in, int bnum, int snum,
+    int fnum, int coff, int bytes, uint32_t *val)
+{
+	int vcpu;
 
 	vcpu = 0;
-	in = 1;
-	bytes = 2;
-	coff = 0x0;
 
-	pci_cfgrw(ctx, vcpu, in, bnum, snum, fnum, coff, bytes, (uint32_t *)&val);
-
-	printf("val 0x%x\n", val);
-
-	return (0);
+	pci_cfgrw(ctx, vcpu, in, bnum, snum, fnum, coff, bytes, val);
 }
