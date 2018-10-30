@@ -55,7 +55,66 @@
 #define	dprintf(fmt, ...)
 #endif
 
-static void
+static int
+guess_access_width(uintptr_t offset)
+{
+	int bytes;
+
+	bytes = 0;
+
+	switch (offset) {
+	case PCIR_VENDOR:
+	case PCIR_DEVICE:
+	case PCIR_COMMAND:
+	case PCIR_STATUS:
+		bytes = 2;
+		break;
+	case PCIR_REVID:
+	case PCIR_PROGIF:
+	case PCIR_SUBCLASS:
+	case PCIR_CLASS:
+	case PCIR_CACHELNSZ:
+	case PCIR_LATTIMER:
+	case PCIR_HDRTYPE:
+		bytes = 1;
+		break;
+	case PCIR_BIST:
+	default:
+		bytes = 0; /* Unknown */
+		break;
+	}
+
+	switch (offset) {
+	case PCIR_BAR(0):
+	case PCIR_BAR(1):
+	case PCIR_BAR(2):
+	case PCIR_BAR(3):
+	case PCIR_BAR(4):
+	case PCIR_BAR(5):
+		bytes = 4;
+		break;
+	case PCIR_CIS:
+		bytes = 0;
+	case PCIR_SUBVEND_0:
+	case PCIR_SUBDEV_0:
+		bytes = 2;
+		break;
+	case PCIR_BIOS:
+	case PCIR_CAP_PTR:
+		bytes = 0;
+		break;
+	case PCIR_INTLINE:
+	case PCIR_INTPIN:
+	case PCIR_MINGNT:
+	case PCIR_MAXLAT:
+		bytes = 1;
+		break;
+	}
+
+	return (bytes);
+}
+
+static void __unused
 emul_pci_write(struct pci_softc *sc, struct epw_request *req,
     uint64_t offset, uint64_t val)
 {
@@ -149,10 +208,9 @@ emul_pci_write(struct pci_softc *sc, struct epw_request *req,
 		dprintf("%s: PCIR_MAXLAT\n", __func__);
 		break;
 	}
-	
 }
 
-static void
+static void __unused
 emul_pci_read(struct pci_softc *sc, struct epw_request *req,
     uint64_t offset)
 {
@@ -272,18 +330,17 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 {
 	struct pci_softc *sc;
 	uint64_t offset;
-	uint64_t val;
+	uint32_t val;
+	int bytes;
 
 	sc = elink->arg;
 
 	KASSERT(elink->type == PCI_GENERIC, ("Unknown device"));
+	KASSERT(req->data_len < 8, ("Wrong access width"));
 
 	offset = req->addr - elink->base_emul - EPW_WINDOW;
 
 	switch (req->data_len) {
-	case 8:
-		val = *(uint64_t *)req->data;
-		break;
 	case 4:
 		val = *(uint32_t *)req->data;
 		break;
@@ -295,10 +352,31 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		break;
 	}
 
+	uint8_t val8[4];
+	uint32_t len;
+
+#if 0
 	if (req->is_write)
 		emul_pci_write(sc, req, offset, val);
 	else
 		emul_pci_read(sc, req, offset);
+#else
+	if (req->is_write) {
+		bytes = req->data_len;
+		printf("%s: %d-bytes write to %lx, val %lx\n", __func__, bytes, offset, val);
+		bhyve_pci_cfgrw(sc->ctx, 0, 0, 0, 0, offset, bytes, (uint32_t *)&val);
+	} else {
+		bzero((void *)&req->data[0], 32);
+		bytes = guess_access_width(offset);
+
+		printf("%s: %d-bytes read from %lx, ", __func__, bytes, offset);
+		bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, offset, bytes, (uint32_t *)&val8[0]);
+		printf("val %lx\n", *(uint32_t *)val8);
+
+		len = bytes + offset % 8;
+		bcopy((void *)&val8[4 - bytes], (void *)&req->data[8 - len], bytes);
+	}
+#endif
 }
 
 int
