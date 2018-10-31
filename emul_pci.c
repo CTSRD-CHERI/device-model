@@ -369,7 +369,7 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		bzero((void *)&req->data[0], 32);
 		bytes = guess_access_width(offset);
 
-		printf("%s: %d-bytes read from %lx, ", __func__, bytes, offset);
+		printf("%s: %d-bytes read from %lx (flit_size %d), ", __func__, bytes, offset, req->flit_size);
 		bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, offset, bytes, (uint32_t *)&val8[0]);
 		printf("val %lx\n", *(uint32_t *)val8);
 
