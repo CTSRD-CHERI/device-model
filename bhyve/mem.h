@@ -52,14 +52,14 @@ struct mem_range {
 #define	MEM_F_RW		0x3
 #define	MEM_F_IMMUTABLE		0x4	/* mem_range cannot be unregistered */
 
-#if 0
 void	init_mem(void);
+#if 0
 int     emulate_mem(struct vmctx *, int vcpu, uint64_t paddr, struct vie *vie,
 		    struct vm_guest_paging *paging);
+#endif
 
 int	read_mem(struct vmctx *ctx, int vcpu, uint64_t gpa, uint64_t *rval,
 		 int size);
-#endif
 int	register_mem(struct mem_range *memp);
 int	register_mem_fallback(struct mem_range *memp);
 int	unregister_mem(struct mem_range *memp);

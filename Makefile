@@ -8,6 +8,7 @@ OBJCOPY =	llvm-objcopy-cheri
 LDSCRIPT =	${.CURDIR}/ldscript
 
 OBJECTS =	alloc.o						\
+		bhyve/mem.o					\
 		bhyve/pci_emul.o				\
 		bhyve/pci_e82545.o				\
 		bhyve_support.o					\
