@@ -387,6 +387,8 @@ pci_emul_io_handler(struct vmctx *ctx, int vcpu, int in, int port, int bytes,
 	uint64_t offset;
 	int i;
 
+	printf("%s\n", __func__);
+
 	for (i = 0; i <= PCI_BARMAX; i++) {
 		if (pdi->pi_bar[i].type == PCIBAR_IO &&
 		    port >= pdi->pi_bar[i].addr &&
@@ -412,6 +414,8 @@ pci_emul_mem_handler(struct vmctx *ctx, int vcpu, int dir, uint64_t addr,
 	struct pci_devemu *pe = pdi->pi_d;
 	uint64_t offset;
 	int bidx = (int) arg2;
+
+	printf("%s\n", __func__);
 
 	assert(bidx <= PCI_BARMAX);
 	assert(pdi->pi_bar[bidx].type == PCIBAR_MEM32 ||
@@ -456,6 +460,8 @@ pci_emul_alloc_resource(uint64_t *baseptr, uint64_t limit, uint64_t size,
 	assert((size & (size - 1)) == 0);	/* must be a power of 2 */
 
 	base = roundup2(*baseptr, size);
+
+	printf("%s: base %lx, size %lx, limit %lx\n", __func__, base, size, limit);
 
 	if (base + size <= limit) {
 		*addr = base;
@@ -525,12 +531,16 @@ static void
 unregister_bar(struct pci_devinst *pi, int idx)
 {
 
+	printf("%s: %d\n", __func__, idx);
+
 	modify_bar_registration(pi, idx, 0);
 }
 
 static void
 register_bar(struct pci_devinst *pi, int idx)
 {
+
+	printf("%s: %d\n", __func__, idx);
 
 	modify_bar_registration(pi, idx, 1);
 }
@@ -1110,7 +1120,7 @@ init_pci(struct vmctx *ctx)
 #if 0
 	pci_emul_membase32 = vm_get_lowmem_limit(ctx);
 #else
-	pci_emul_membase32 = 0;
+	pci_emul_membase32 = 0x7fb10000;
 #endif
 	pci_emul_membase64 = PCI_EMUL_MEMBASE64;
 
@@ -1198,7 +1208,7 @@ init_pci(struct vmctx *ctx)
 #if 0
 	lowmem = vm_get_lowmem_size(ctx);
 #else
-	lowmem = 0;
+	lowmem = 0;	/* DM TODO */
 #endif
 	bzero(&mr, sizeof(struct mem_range));
 	mr.name = "PCI hole";
@@ -1727,6 +1737,8 @@ pci_emul_cmdsts_write(struct pci_devinst *pi, int coff, uint32_t new, int bytes)
 	int i, rshift;
 	uint32_t cmd, cmd2, changed, old, readonly;
 
+	//printf("%s 0: newval %x, bytes %d\n", __func__, new, bytes);
+
 	cmd = pci_get_cfgdata16(pi, PCIR_COMMAND);	/* stash old value */
 
 	/*
@@ -1743,6 +1755,8 @@ pci_emul_cmdsts_write(struct pci_devinst *pi, int coff, uint32_t new, int bytes)
 	new &= ~readonly;
 	new |= (old & readonly);
 	CFGWRITE(pi, coff, new, bytes);			/* update config */
+
+	//printf("%s 1: newval %x, bytes %d\n", __func__, new, bytes);
 
 	cmd2 = pci_get_cfgdata16(pi, PCIR_COMMAND);	/* get updated value */
 	changed = cmd ^ cmd2;
@@ -1869,6 +1883,8 @@ pci_cfgrw(struct vmctx *ctx, int vcpu, int in, int bus, int slot, int func,
 			if (bytes != 4 || (coff & 0x3) != 0)
 				return;
 			idx = (coff - PCIR_BAR(0)) / 4;
+			printf("%s: write to BAR %d, i->pi_bar[idx].type %d\n",
+			    __func__, idx, pi->pi_bar[idx].type);
 			mask = ~(pi->pi_bar[idx].size - 1);
 			switch (pi->pi_bar[idx].type) {
 			case PCIBAR_NONE:
@@ -2175,6 +2191,8 @@ bhyve_pci_init(struct vmctx *ctx)
 	bnum = 0;
 	snum = 0;
 	fnum = 0;
+
+	init_mem();
 
 	pci_businfo[bnum] = calloc(1, sizeof(struct businfo));
 	bi = pci_businfo[bnum];
