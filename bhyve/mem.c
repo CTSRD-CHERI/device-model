@@ -275,6 +275,49 @@ emulate_mem(struct vmctx *ctx, int vcpu, uint64_t paddr, struct vie *vie,
 	ema.paging = paging;
 	return (access_memory(ctx, vcpu, paddr, emulate_mem_cb, &ema));
 }
+#else
+
+struct emulate_mem_args {
+	int write;
+	int access_width;
+	uint64_t *val;
+};
+
+static int
+emulate_mem_cb(struct vmctx *ctx, int vcpu, uint64_t paddr, struct mem_range *mr,
+    void *arg)
+{
+	struct emulate_mem_args *ema;
+	int error;
+	int size;
+
+	ema = arg;
+	size = ema->access_width;
+
+	printf("%s: paddr %lx\n", __func__, paddr);
+
+	if (ema->write == 0)
+		error = (*mr->handler)(ctx, vcpu, MEM_F_READ, paddr, size,
+		    ema->val, mr->arg1, mr->arg2);
+	else
+		error = (*mr->handler)(ctx, vcpu, MEM_F_WRITE, paddr, size,
+		    ema->val, mr->arg1, mr->arg2);
+
+	return (error);
+}
+
+int
+emulate_mem(struct vmctx *ctx, int vcpu, uint64_t paddr,
+    int write, int access_width, uint64_t *val)
+{
+	struct emulate_mem_args ema;
+
+	ema.write = write;
+	ema.access_width = access_width;
+	ema.val = val;
+	return (access_memory(ctx, vcpu, paddr, emulate_mem_cb, &ema));
+}
+
 #endif
 
 struct read_mem_args {

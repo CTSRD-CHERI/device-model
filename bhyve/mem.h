@@ -56,6 +56,10 @@ void	init_mem(void);
 #if 0
 int     emulate_mem(struct vmctx *, int vcpu, uint64_t paddr, struct vie *vie,
 		    struct vm_guest_paging *paging);
+#else
+int     emulate_mem(struct vmctx *ctx, int vcpu, uint64_t paddr,
+    int write, int access_width, uint64_t *val);
+
 #endif
 
 int	read_mem(struct vmctx *ctx, int vcpu, uint64_t gpa, uint64_t *rval,
