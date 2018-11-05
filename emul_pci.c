@@ -55,65 +55,6 @@
 #define	dprintf(fmt, ...)
 #endif
 
-static int
-guess_access_width(uintptr_t offset)
-{
-	int bytes;
-
-	bytes = 0;
-
-	switch (offset) {
-	case PCIR_VENDOR:
-	case PCIR_DEVICE:
-	case PCIR_COMMAND:
-	case PCIR_STATUS:
-		bytes = 2;
-		break;
-	case PCIR_REVID:
-	case PCIR_PROGIF:
-	case PCIR_SUBCLASS:
-	case PCIR_CLASS:
-	case PCIR_CACHELNSZ:
-	case PCIR_LATTIMER:
-	case PCIR_HDRTYPE:
-		bytes = 1;
-		break;
-	case PCIR_BIST:
-	default:
-		bytes = 0; /* Unknown */
-		break;
-	}
-
-	switch (offset) {
-	case PCIR_BAR(0):
-	case PCIR_BAR(1):
-	case PCIR_BAR(2):
-	case PCIR_BAR(3):
-	case PCIR_BAR(4):
-	case PCIR_BAR(5):
-		bytes = 4;
-		break;
-	case PCIR_CIS:
-		bytes = 0;
-	case PCIR_SUBVEND_0:
-	case PCIR_SUBDEV_0:
-		bytes = 2;
-		break;
-	case PCIR_BIOS:
-	case PCIR_CAP_PTR:
-		bytes = 0;
-		break;
-	case PCIR_INTLINE:
-	case PCIR_INTPIN:
-	case PCIR_MINGNT:
-	case PCIR_MAXLAT:
-		bytes = 1;
-		break;
-	}
-
-	return (bytes);
-}
-
 static void __unused
 emul_pci_write(struct pci_softc *sc, struct epw_request *req,
     uint64_t offset, uint64_t val)
@@ -367,7 +308,7 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		bhyve_pci_cfgrw(sc->ctx, 0, 0, 0, 0, offset, bytes, (uint32_t *)&val);
 	} else {
 		bzero((void *)&req->data[0], 32);
-		bytes = guess_access_width(offset);
+		bytes = req->flit_size;
 
 		printf("%s: %d-bytes read from %lx (flit_size %d), ", __func__, bytes, offset, req->flit_size);
 		bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, offset, bytes, (uint32_t *)&val8[0]);
