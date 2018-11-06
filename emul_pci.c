@@ -274,7 +274,8 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 	uint64_t offset;
 	uint64_t val;
 	int bytes;
-
+	int error;
+	int i;
 	uint8_t val8[8];
 	uint32_t len;
 
@@ -308,11 +309,9 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		emul_pci_write(sc, req, offset, val);
 	else
 		emul_pci_read(sc, req, offset);
+	return;
 #endif
 
-#if 1
-	int error;
-	int i;
 	if (req->is_write) {
 		error = emulate_mem(sc->ctx, 0, req->addr, req->is_write, req->flit_size, &val);
 		printf("Error %d, val %lx\n", error, val);
@@ -321,15 +320,15 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		error = emulate_mem(sc->ctx, 0, req->addr, req->is_write, req->flit_size, (uint64_t *)&val8[0]);
 		if (error == 0)
 			for (i = 0; i < bytes; i++)
-				req->data[8 - bytes + i] = val8[7 - i];
+				/* TODO: is offset required here ? */
+				req->data[8 - bytes - offset % 8 + i] = val8[7 - i];
 	}
 
 	if (error == 0) {
 		printf("%s: dev req (is_write %d) paddr %lx, val %lx\n", __func__,
 		    req->is_write, req->addr, val);
-		goto done;
+		return;
 	}
-#endif
 
 	if (req->is_write) {
 		bytes = req->data_len;
@@ -346,9 +345,6 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		len = bytes + offset % 8;
 		bcopy((void *)&val8[4 - bytes], (void *)&req->data[8 - len], bytes);
 	}
-
-done:
-	return;
 }
 
 int
