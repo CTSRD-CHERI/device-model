@@ -265,7 +265,7 @@ struct ck_info {
 /*
  * Debug printf
  */
-static int e82545_debug = 0;
+static int e82545_debug = 1000;
 #if 0
 #define DPRINTF(msg,params...) if (e82545_debug) fprintf(stderr, "e82545: " msg, params)
 #define WPRINTF(msg,params...) fprintf(stderr, "e82545: " msg, params)
@@ -469,7 +469,7 @@ static uint32_t
 e82545_read_mdi(struct e82545_softc *sc, uint8_t reg_addr,
 			uint8_t phy_addr)
 {
-	//DPRINTF("Read mdi reg:0x%x phy:0x%x\r\n", reg_addr, phy_addr);
+	DPRINTF("Read mdi reg:0x%x phy:0x%x\r\n", reg_addr, phy_addr);
 	switch (reg_addr) {
 	case PHY_STATUS:
 		return (MII_SR_LINK_STATUS | MII_SR_AUTONEG_CAPS |
@@ -1793,7 +1793,7 @@ e82545_write_register(struct e82545_softc *sc, uint32_t offset, uint32_t value)
 		break;		
 	case E1000_EECD:
 	{
-		//DPRINTF("EECD write 0x%x -> 0x%x\r\n", sc->eeprom_control, value);
+		DPRINTF("EECD write 0x%x -> 0x%x\r\n", sc->eeprom_control, value);
 		/* edge triggered low->high */
 		uint32_t eecd_strobe = ((sc->eeprom_control & E1000_EECD_SK) ?
 			0 : (value & E1000_EECD_SK));
@@ -1989,7 +1989,7 @@ e82545_read_register(struct e82545_softc *sc, uint32_t offset)
 		retval = sc->esc_fvlan[(offset - E1000_VFTA) >> 2];
 		break;		
 	case E1000_EECD:
-		//DPRINTF("EECD read %x\r\n", sc->eeprom_control);
+		DPRINTF("EECD read %x\r\n", sc->eeprom_control);
 		retval = sc->eeprom_control;
 		break;
 	case E1000_MDIC:
@@ -2133,7 +2133,7 @@ e82545_write(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 {
 	struct e82545_softc *sc;
 
-	//DPRINTF("Write bar:%d offset:0x%lx value:0x%lx size:%d\r\n", baridx, offset, value, size);
+	DPRINTF("Write bar:%d offset:0x%lx value:0x%lx size:%d\r\n", baridx, offset, value, size);
 
 	sc = pi->pi_arg;
 
@@ -2188,7 +2188,7 @@ e82545_read(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 	struct e82545_softc *sc;
 	uint64_t retval;
 	
-	//DPRINTF("Read  bar:%d offset:0x%lx size:%d\r\n", baridx, offset, size);
+	DPRINTF("Read  bar:%d offset:0x%lx size:%d\r\n", baridx, offset, size);
 	sc = pi->pi_arg;
 	retval = 0;
 
