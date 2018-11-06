@@ -56,216 +56,6 @@
 #define	dprintf(fmt, ...)
 #endif
 
-static void __unused
-emul_pci_write(struct pci_softc *sc, struct epw_request *req,
-    uint64_t offset, uint64_t val)
-{
-
-	dprintf("%s: write to %lx val %lx\n", __func__, offset, val);
-
-	switch (offset) {
-	case PCIR_VENDOR:
-		dprintf("%s: PCIR_VENDOR\n", __func__);
-		break;
-	case PCIR_DEVICE:
-		dprintf("%s: PCIR_DEVICE\n", __func__);
-		break;
-	case PCIR_COMMAND:
-		dprintf("%s: PCIR_COMMAND\n", __func__);
-		sc->cmd = val;
-		break;
-	case PCIR_STATUS:
-		dprintf("%s: PCIR_STATUS\n", __func__);
-		break;
-	case PCIR_REVID:
-		dprintf("%s: PCIR_REVID\n", __func__);
-		break;
-	case PCIR_PROGIF:
-		dprintf("%s: PCIR_PROGIF\n", __func__);
-		break;
-	case PCIR_SUBCLASS:
-		dprintf("%s: PCIR_SUBCLASS\n", __func__);
-		break;
-	case PCIR_CLASS:
-		dprintf("%s: PCIR_CLASS\n", __func__);
-		break;
-	case PCIR_CACHELNSZ:
-		dprintf("%s: PCIR_CACHELNSZ\n", __func__);
-		break;
-	case PCIR_LATTIMER:
-		dprintf("%s: PCIR_LATTIMER\n", __func__);
-		break;
-	case PCIR_HDRTYPE:
-		dprintf("%s: PCIR_HDRTYPE\n", __func__);
-		break;
-	case PCIR_BIST:
-		dprintf("%s: PCIR_BIST\n", __func__);
-		break;
-	}
-
-	switch (offset) {
-	case PCIR_BAR(0):
-		dprintf("%s: PCIR_BAR(0)\n", __func__);
-		break;
-	case PCIR_BAR(1):
-		dprintf("%s: PCIR_BAR(1)\n", __func__);
-		break;
-	case PCIR_BAR(2):
-		dprintf("%s: PCIR_BAR(2)\n", __func__);
-		break;
-	case PCIR_BAR(3):
-		dprintf("%s: PCIR_BAR(3)\n", __func__);
-		break;
-	case PCIR_BAR(4):
-		dprintf("%s: PCIR_BAR(4)\n", __func__);
-		break;
-	case PCIR_BAR(5):
-		dprintf("%s: PCIR_BAR(5)\n", __func__);
-		break;
-	case PCIR_CIS:
-		dprintf("%s: PCIR_CIS\n", __func__);
-		break;
-	case PCIR_SUBVEND_0:
-		dprintf("%s: PCIR_SUBVEND_0\n", __func__);
-		break;
-	case PCIR_SUBDEV_0:
-		dprintf("%s: PCIR_SUBDEV_0\n", __func__);
-		break;
-	case PCIR_BIOS:
-		dprintf("%s: PCIR_BIOS\n", __func__);
-		break;
-	case PCIR_CAP_PTR:
-		dprintf("%s: PCIR_CAP_PTR\n", __func__);
-		break;
-	case PCIR_INTLINE:
-		dprintf("%s: PCIR_INTLINE\n", __func__);
-		break;
-	case PCIR_INTPIN:
-		dprintf("%s: PCIR_INTPIN\n", __func__);
-		break;
-	case PCIR_MINGNT:
-		dprintf("%s: PCIR_MINGNT\n", __func__);
-		break;
-	case PCIR_MAXLAT:
-		dprintf("%s: PCIR_MAXLAT\n", __func__);
-		break;
-	}
-}
-
-static void __unused
-emul_pci_read(struct pci_softc *sc, struct epw_request *req,
-    uint64_t offset)
-{
-	uint16_t val;
-
-	dprintf("%s: read from %lx\n", __func__, offset);
-
-	bzero((void *)&req->data[0], 32);
-
-	switch (offset) {
-	case PCIR_VENDOR:
-		dprintf("%s: PCIR_VENDOR\n", __func__);
-		val = 0x8086;
-		bcopy((void *)&val, (void *)&req->data[6], 2);
-		break;
-	case PCIR_DEVICE:
-		dprintf("%s: PCIR_DEVICE\n", __func__);
-		val = 0x100F;
-		bcopy((void *)&val, (void *)&req->data[4], 2);
-#if 0
-		req->data[0] = 1;
-		req->data[1] = 2;
-		req->data[2] = 3;
-		req->data[3] = 4;
-		req->data[4] = 5;
-		req->data[5] = 6;
-		req->data[6] = 7;
-		req->data[7] = 8;
-		req->data[8] = 9;
-#endif
-		break;
-	case PCIR_COMMAND:
-		dprintf("%s: PCIR_COMMAND\n", __func__);
-		bcopy((void *)&sc->cmd, (void *)&req->data[2], 2);
-		break;
-	case PCIR_STATUS:
-		dprintf("%s: PCIR_STATUS\n", __func__);
-		break;
-	case PCIR_REVID:
-		dprintf("%s: PCIR_REVID\n", __func__);
-		break;
-	case PCIR_PROGIF:
-		dprintf("%s: PCIR_PROGIF\n", __func__);
-		break;
-	case PCIR_SUBCLASS:
-		dprintf("%s: PCIR_SUBCLASS\n", __func__);
-		break;
-	case PCIR_CLASS:
-		dprintf("%s: PCIR_CLASS\n", __func__);
-		break;
-	case PCIR_CACHELNSZ:
-		dprintf("%s: PCIR_CACHELNSZ\n", __func__);
-		break;
-	case PCIR_LATTIMER:
-		dprintf("%s: PCIR_LATTIMER\n", __func__);
-		break;
-	case PCIR_HDRTYPE:
-		dprintf("%s: PCIR_HDRTYPE\n", __func__);
-		break;
-	case PCIR_BIST:
-		dprintf("%s: PCIR_BIST\n", __func__);
-		break;
-	}
-
-	switch (offset) {
-	case PCIR_BAR(0):
-		dprintf("%s: PCIR_BAR(0)\n", __func__);
-		break;
-	case PCIR_BAR(1):
-		dprintf("%s: PCIR_BAR(1)\n", __func__);
-		break;
-	case PCIR_BAR(2):
-		dprintf("%s: PCIR_BAR(2)\n", __func__);
-		break;
-	case PCIR_BAR(3):
-		dprintf("%s: PCIR_BAR(3)\n", __func__);
-		break;
-	case PCIR_BAR(4):
-		dprintf("%s: PCIR_BAR(4)\n", __func__);
-		break;
-	case PCIR_BAR(5):
-		dprintf("%s: PCIR_BAR(5)\n", __func__);
-		break;
-	case PCIR_CIS:
-		dprintf("%s: PCIR_CIS\n", __func__);
-		break;
-	case PCIR_SUBVEND_0:
-		dprintf("%s: PCIR_SUBVEND_0\n", __func__);
-		break;
-	case PCIR_SUBDEV_0:
-		dprintf("%s: PCIR_SUBDEV_0\n", __func__);
-		break;
-	case PCIR_BIOS:
-		dprintf("%s: PCIR_BIOS\n", __func__);
-		break;
-	case PCIR_CAP_PTR:
-		dprintf("%s: PCIR_CAP_PTR\n", __func__);
-		break;
-	case PCIR_INTLINE:
-		dprintf("%s: PCIR_INTLINE\n", __func__);
-		break;
-	case PCIR_INTPIN:
-		dprintf("%s: PCIR_INTPIN\n", __func__);
-		break;
-	case PCIR_MINGNT:
-		dprintf("%s: PCIR_MINGNT\n", __func__);
-		break;
-	case PCIR_MAXLAT:
-		dprintf("%s: PCIR_MAXLAT\n", __func__);
-		break;
-	}
-}
-
 void
 emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
     struct epw_request *req)
@@ -304,17 +94,9 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		break;
 	}
 
-#if 0
-	if (req->is_write)
-		emul_pci_write(sc, req, offset, val);
-	else
-		emul_pci_read(sc, req, offset);
-	return;
-#endif
-
 	if (req->is_write) {
 		error = emulate_mem(sc->ctx, 0, req->addr, req->is_write, req->flit_size, &val);
-		printf("Error %d, val %lx\n", error, val);
+		dprintf("Error %d, val %lx\n", error, val);
 	} else {
 		bytes = req->data_len;
 		error = emulate_mem(sc->ctx, 0, req->addr, req->is_write, req->flit_size, (uint64_t *)&val8[0]);
@@ -325,7 +107,7 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 	}
 
 	if (error == 0) {
-		printf("%s: dev req (is_write %d) paddr %lx, val %lx\n", __func__,
+		dprintf("%s: dev req (is_write %d) paddr %lx, val %lx\n", __func__,
 		    req->is_write, req->addr, val);
 		return;
 	}
@@ -339,7 +121,7 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		bzero((void *)&req->data[0], 32);
 		bytes = req->flit_size;
 
-		printf("%s: %d-bytes read from %lx, ", __func__, bytes, offset);
+		dprintf("%s: %d-bytes read from %lx, ", __func__, bytes, offset);
 		bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, offset, bytes, (uint32_t *)&val8[0]);
 
 		len = bytes + offset % 8;
