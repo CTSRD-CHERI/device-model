@@ -1062,6 +1062,7 @@ pci_emul_iscap(struct pci_devinst *pi, int offset)
 	return (0);
 }
 
+#if 0
 static int
 pci_emul_fallback_handler(struct vmctx *ctx, int vcpu, int dir, uint64_t addr,
 			  int size, uint64_t *val, void *arg1, long arg2)
@@ -1076,6 +1077,7 @@ pci_emul_fallback_handler(struct vmctx *ctx, int vcpu, int dir, uint64_t addr,
 
 	return (0);
 }
+#endif
 
 static int
 pci_emul_ecfg_handler(struct vmctx *ctx, int vcpu, int dir, uint64_t addr,
@@ -1112,7 +1114,9 @@ init_pci(struct vmctx *ctx)
 	struct businfo *bi;
 	struct slotinfo *si;
 	struct funcinfo *fi;
+#if 0
 	size_t lowmem;
+#endif
 	int bus, slot, func;
 	int error;
 
@@ -1207,9 +1211,6 @@ init_pci(struct vmctx *ctx)
 	 */
 #if 0
 	lowmem = vm_get_lowmem_size(ctx);
-#else
-	lowmem = 0;	/* DM TODO */
-#endif
 	bzero(&mr, sizeof(struct mem_range));
 	mr.name = "PCI hole";
 	mr.flags = MEM_F_RW | MEM_F_IMMUTABLE;
@@ -1218,6 +1219,7 @@ init_pci(struct vmctx *ctx)
 	mr.handler = pci_emul_fallback_handler;
 	error = register_mem_fallback(&mr);
 	assert(error == 0);
+#endif
 
 	/* PCI extended config space */
 	bzero(&mr, sizeof(struct mem_range));
