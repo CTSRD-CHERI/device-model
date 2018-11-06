@@ -46,12 +46,21 @@
 #define	DM_FWD_NDEVICES		4
 #define	DM_EMUL_NDEVICES	5
 
-struct msgdma_softc msgdma0_sc;
-struct msgdma_softc msgdma1_sc;
-struct pci_softc pci0_sc;
+#define	DM_DEBUG
+#undef	DM_DEBUG
+
+#ifdef	DM_DEBUG
+#define	dprintf(fmt, ...)	printf(fmt, ##__VA_ARGS__)
+#else
+#define	dprintf(fmt, ...)
+#endif
 
 #undef FWD_ENABLE
 #undef MSGDMA_ENABLE
+
+struct msgdma_softc msgdma0_sc;
+struct msgdma_softc msgdma1_sc;
+struct pci_softc pci0_sc;
 
 #ifdef FWD_ENABLE
 const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
@@ -84,7 +93,7 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 
 	offset = req->addr - EPW_WINDOW;
 
-	printf("%s: offset %lx\n", __func__, offset);
+	dprintf("%s: offset %lx\n", __func__, offset);
 
 #ifdef FWD_ENABLE
 	/* Check if this is forwarding request */

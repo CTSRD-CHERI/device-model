@@ -415,8 +415,6 @@ pci_emul_mem_handler(struct vmctx *ctx, int vcpu, int dir, uint64_t addr,
 	uint64_t offset;
 	int bidx = (int) arg2;
 
-	printf("%s\n", __func__);
-
 	assert(bidx <= PCI_BARMAX);
 	assert(pdi->pi_bar[bidx].type == PCIBAR_MEM32 ||
 	       pdi->pi_bar[bidx].type == PCIBAR_MEM64);

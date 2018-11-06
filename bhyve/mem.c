@@ -59,6 +59,15 @@ __FBSDID("$FreeBSD$");
 
 #define	VM_MAXCPU	1
 
+#define	BHYVE_MEM_DEBUG
+#undef	BHYVE_MEM_DEBUG
+
+#ifdef	BHYVE_MEM_DEBUG
+#define	dprintf(fmt, ...)	printf(fmt, ##__VA_ARGS__)
+#else
+#define	dprintf(fmt, ...)
+#endif
+
 struct mmio_rb_range {
 	RB_ENTRY(mmio_rb_range)	mr_link;	/* RB tree links */
 	struct mem_range	mr_param;
@@ -419,7 +428,7 @@ unregister_mem(struct mem_range *memp)
 	int err, i;
 #endif
 
-	printf("%s: name %s base %lx size %lx\n",
+	dprintf("%s: name %s base %lx size %lx\n",
 	    __func__, memp->name, memp->base, memp->size);
 	
 #if 0
