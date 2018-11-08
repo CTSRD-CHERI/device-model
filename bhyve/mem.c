@@ -303,7 +303,7 @@ emulate_mem_cb(struct vmctx *ctx, int vcpu, uint64_t paddr, struct mem_range *mr
 	ema = arg;
 	size = ema->access_width;
 
-	printf("%s: paddr %lx\n", __func__, paddr);
+	dprintf("%s: paddr %lx\n", __func__, paddr);
 
 	if (ema->write == 0)
 		error = (*mr->handler)(ctx, vcpu, MEM_F_READ, paddr, size,
