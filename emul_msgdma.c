@@ -96,34 +96,13 @@ send_soft_irq(struct msgdma_softc *sc)
 void
 emul_msgdma_fifo_intr(void *arg)
 {
-	struct altera_fifo_softc *sc;
-	struct msgdma_softc *msgdma_sc;
-	uint32_t reg;
-	uint32_t err;
+	struct msgdma_softc *sc;
 
-	msgdma_sc = arg;
-	sc = msgdma_sc->fifo_sc;
+	sc = arg;
 
-	reg = RD4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_EVENT);
-	reg = le32toh(reg);
-
-	dprintf("%s: reg %x\n", __func__, reg);
-
-	if (reg & (A_ONCHIP_FIFO_MEM_CORE_EVENT_OVERFLOW |
-	    A_ONCHIP_FIFO_MEM_CORE_EVENT_UNDERFLOW)) {
-		/* Errors */
-		err = (((reg & A_ONCHIP_FIFO_MEM_CORE_ERROR_MASK) >> \
-		    A_ONCHIP_FIFO_MEM_CORE_ERROR_SHIFT) & 0xff);
-		dprintf("%s: reg %x err %x\n", __func__, reg, err);
-	}
-
-	if (reg != 0) {
-		if (msgdma_sc->unit == 1)
-			emul_msgdma_poll(msgdma_sc);
-		WR4_FIFO_MEMC(sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_EVENT, htole32(reg));
-	}
+	if (sc->unit == 1)
+		emul_msgdma_poll(sc);
 }
-
 
 void
 emul_msgdma_poll(struct msgdma_softc *sc)
@@ -197,6 +176,8 @@ emul_msgdma_poll_enable(struct msgdma_softc *sc)
 
 	if (sc->unit == 1) {
 		dprintf("%s(%d): Enabling RX interrupts\n", __func__, sc->unit);
+		sc->fifo_sc->cb = emul_msgdma_fifo_intr;
+		sc->fifo_sc->cb_arg = sc;
 		WR4_FIFO_MEMC(sc->fifo_sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_EVENT, 0);
 		WR4_FIFO_MEMC(sc->fifo_sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_INT_ENABLE,
 		    htole32(SOFTDMA_RX_EVENTS));

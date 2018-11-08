@@ -41,6 +41,7 @@
 #include <mips/beri/beripic.h>
 #include <mips/beri/beri_epw.h>
 #include <dev/altera/jtag_uart/jtag_uart.h>
+#include <dev/altera/fifo/fifo.h>
 
 #include <mips/mips/trap.h>
 
@@ -64,8 +65,8 @@ static struct mips_timer_softc timer_sc;
 extern uint32_t _sbss;
 extern uint32_t _ebss;
 
-extern struct msgdma_softc msgdma0_sc;
-extern struct msgdma_softc msgdma1_sc;
+extern struct altera_fifo_softc fifo0_sc;
+extern struct altera_fifo_softc fifo1_sc;
 
 static void
 softintr(void *arg, struct trapframe *frame, int i)
@@ -107,8 +108,8 @@ static const struct mips_intr_entry mips_intr_map[MIPS_N_INTR] = {
 };
 
 static const struct beripic_intr_entry beripic_intr_map[BERIPIC_NIRQS] = {
-	[11] = { emul_msgdma_fifo_intr, (void *)&msgdma1_sc },	/* rx */
-	[12] = { emul_msgdma_fifo_intr, (void *)&msgdma0_sc },	/* tx */
+	[11] = { altera_fifo_intr, (void *)&fifo1_sc },	/* rx */
+	[12] = { altera_fifo_intr, (void *)&fifo0_sc },	/* tx */
 	[16] = { ipi_from_freebsd, NULL },
 };
 
