@@ -32,6 +32,8 @@
 #include <sys/malloc.h>
 #include <sys/lock.h>
 
+#include <machine/cpuregs.h>
+
 #include "bhyve/mem.h"
 #include "bhyve/inout.h"
 #include "bhyve/pci_emul.h"
@@ -136,8 +138,11 @@ lpc_pirq_routed(void)
 void *
 paddr_guest2host(struct vmctx *ctx, uintptr_t gaddr, size_t len)
 {
+	uintptr_t addr;
 
-	printf("%s: gaddr %lx len %d\n", __func__, gaddr, len);
+	addr = gaddr | MIPS_XKPHYS_UNCACHED_BASE;
 
-	return (NULL);
+	printf("%s: gaddr %lx, addr %lx, len %d\n", __func__, gaddr, addr, len);
+
+	return ((void *)addr);
 }
