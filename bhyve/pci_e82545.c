@@ -34,6 +34,7 @@
 __FBSDID("$FreeBSD$");
 #endif
 #include <sys/param.h>
+#include <sys/endian.h>
 
 #include <sys/types.h>
 #ifndef WITHOUT_CAPSICUM
@@ -89,6 +90,7 @@ __FBSDID("$FreeBSD$");
 #include "bhyverun.h"
 #endif
 #include "pci_emul.h"
+#include "pci_e82545.h"
 #if 1
 #include "mevent.h"
 #endif
@@ -265,7 +267,7 @@ struct ck_info {
 /*
  * Debug printf
  */
-static int e82545_debug = 1000;
+static int e82545_debug = 0;
 #if 0
 #define DPRINTF(msg,params...) if (e82545_debug) fprintf(stderr, "e82545: " msg, params)
 #define WPRINTF(msg,params...) fprintf(stderr, "e82545: " msg, params)
@@ -400,6 +402,8 @@ struct e82545_softc {
 	/* EEPROM data */
 	uint16_t eeprom_data[E82545_NVM_EEPROM_SIZE];
 };
+
+struct e82545_softc *e82545_sc;
 
 static void e82545_reset(struct e82545_softc *sc, int dev);
 static void e82545_rx_enable(struct e82545_softc *sc);
@@ -943,7 +947,7 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 		for (i = 0; i < maxpktdesc; i++) {
 			rxd = &sc->esc_rxdesc[(head + i) % size];
 			vec[i].iov_base = paddr_guest2host(sc->esc_ctx,
-			    rxd->buffer_addr, bufsz);
+			    le64toh(rxd->buffer_addr), bufsz);
 			vec[i].iov_len = bufsz;
 		}
 		len = readv(sc->esc_tapfd, vec, maxpktdesc);
@@ -1134,6 +1138,8 @@ static void
 e82545_transmit_backend(struct e82545_softc *sc, struct iovec *iov, int iovcnt)
 {
 
+	printf("%s\n", __func__);
+
 #if 0
 	if (sc->esc_tapfd == -1)
 		return;
@@ -1150,8 +1156,8 @@ e82545_transmit_done(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 
 	for ( ; head != tail; head = (head + 1) % dsize) {
 		dsc = &sc->esc_txdesc[head];
-		if (dsc->td.lower.data & E1000_TXD_CMD_RS) {
-			dsc->td.upper.data |= E1000_TXD_STAT_DD;
+		if (le32toh(dsc->td.lower.data) & E1000_TXD_CMD_RS) {
+			dsc->td.upper.data |= htole32(E1000_TXD_STAT_DD);
 			*tdwb = 1;
 		}
 	}
@@ -1189,21 +1195,21 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 			return (0);
 		}
 		dsc = &sc->esc_txdesc[head];
-		dtype = e82545_txdesc_type(dsc->td.lower.data);
+		dtype = e82545_txdesc_type(le32toh(dsc->td.lower.data));
 
 		if (desc == 0) {
 			switch (dtype) {
 			case E1000_TXD_TYP_C:
-				DPRINTF("tx ctxt desc idx %d: %016jx "
+				WPRINTF("tx ctxt desc idx %d: %016jx "
 				    "%08x%08x\r\n",
-				    head, dsc->td.buffer_addr,
-				    dsc->td.upper.data, dsc->td.lower.data);
+				    head, le64toh(dsc->td.buffer_addr),
+				    le32toh(dsc->td.upper.data), le32toh(dsc->td.lower.data));
 				/* Save context and return */
 				sc->esc_txctx = dsc->cd;
 				goto done;
 			case E1000_TXD_TYP_L:
-				DPRINTF("tx legacy desc idx %d: %08x%08x\r\n",
-				    head, dsc->td.upper.data, dsc->td.lower.data);
+				WPRINTF("tx legacy desc idx %d: %08x%08x\r\n",
+				    head, le32toh(dsc->td.upper.data), le32toh(dsc->td.lower.data));
 				/*
 				 * legacy cksum start valid in first descriptor
 				 */
@@ -1211,32 +1217,33 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 				ckinfo[0].ck_start = dsc->td.upper.fields.css;
 				break;
 			case E1000_TXD_TYP_D:
-				DPRINTF("tx data desc idx %d: %08x%08x\r\n",
-				    head, dsc->td.upper.data, dsc->td.lower.data);
+				WPRINTF("tx data desc idx %d: %08x%08x\r\n",
+				    head, le32toh(dsc->td.upper.data), le32toh(dsc->td.lower.data));
 				ntype = dtype;
 				break;
 			default:
+				printf("dtype is unknown\n");
 				break;
 			}
 		} else {
 			/* Descriptor type must be consistent */
 			assert(dtype == ntype);
-			DPRINTF("tx next desc idx %d: %08x%08x\r\n",
-			    head, dsc->td.upper.data, dsc->td.lower.data);
+			WPRINTF("tx next desc idx %d: %08x%08x\r\n",
+			    head, le32toh(dsc->td.upper.data), le32toh(dsc->td.lower.data));
 		}
 
-		len = (dtype == E1000_TXD_TYP_L) ? dsc->td.lower.flags.length :
-		    dsc->dd.lower.data & 0xFFFFF;
+		len = (dtype == E1000_TXD_TYP_L) ? le16toh(dsc->td.lower.flags.length) :
+		    le32toh(dsc->dd.lower.data) & 0xFFFFF;
 
 		if (len > 0) {
 			/* Strip checksum supplied by guest. */
-			if ((dsc->td.lower.data & E1000_TXD_CMD_EOP) != 0 &&
-			    (dsc->td.lower.data & E1000_TXD_CMD_IFCS) == 0)
+			if ((le32toh(dsc->td.lower.data) & E1000_TXD_CMD_EOP) != 0 &&
+			    (le32toh(dsc->td.lower.data) & E1000_TXD_CMD_IFCS) == 0)
 				len -= 2;
 			tlen += len;
 			if (iovcnt < I82545_MAX_TXSEGS) {
 				iov[iovcnt].iov_base = paddr_guest2host(
-				    sc->esc_ctx, dsc->td.buffer_addr, len);
+				    sc->esc_ctx, le64toh(dsc->td.buffer_addr), len);
 				iov[iovcnt].iov_len = len;
 			}
 			iovcnt++;
@@ -1246,9 +1253,9 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 		 * Pull out info that is valid in the final descriptor
 		 * and exit descriptor loop.
 		 */
-		if (dsc->td.lower.data & E1000_TXD_CMD_EOP) {
+		if (le32toh(dsc->td.lower.data) & E1000_TXD_CMD_EOP) {
 			if (dtype == E1000_TXD_TYP_L) {
-				if (dsc->td.lower.data & E1000_TXD_CMD_IC) {
+				if (le32toh(dsc->td.lower.data) & E1000_TXD_CMD_IC) {
 					ckinfo[0].ck_valid = 1;
 					ckinfo[0].ck_off =
 					    dsc->td.lower.flags.cso;
@@ -1256,7 +1263,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 				}
 			} else {
 				cd = &sc->esc_txctx;
-				if (dsc->dd.lower.data & E1000_TXD_CMD_TSE)
+				if (le32toh(dsc->dd.lower.data) & E1000_TXD_CMD_TSE)
 					tso = 1;
 				if (dsc->dd.upper.fields.popts &
 				    E1000_TXD_POPTS_IXSM)
@@ -1268,7 +1275,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 					ckinfo[0].ck_off =
 					    cd->lower_setup.ip_fields.ipcso;
 					ckinfo[0].ck_len =
-					    cd->lower_setup.ip_fields.ipcse;
+					    le16toh(cd->lower_setup.ip_fields.ipcse);
 				}
 				if (dsc->dd.upper.fields.popts &
 				    E1000_TXD_POPTS_TXSM)
@@ -1280,7 +1287,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 					ckinfo[1].ck_off =
 					    cd->upper_setup.tcp_fields.tucso;
 					ckinfo[1].ck_len =
-					    cd->upper_setup.tcp_fields.tucse;
+					    le16toh(cd->upper_setup.tcp_fields.tucse);
 				}
 			}
 			break;
@@ -1296,7 +1303,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 	hdrlen = vlen = 0;
 	/* Estimate writable space for VLAN header insertion. */
 	if ((sc->esc_CTRL & E1000_CTRL_VME) &&
-	    (dsc->td.lower.data & E1000_TXD_CMD_VLE)) {
+	    (le32toh(dsc->td.lower.data) & E1000_TXD_CMD_VLE)) {
 		hdrlen = ETHER_ADDR_LEN*2;
 		vlen = ETHER_VLAN_ENCAP_LEN;
 	}
@@ -1347,8 +1354,8 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 		hdrlen += ETHER_VLAN_ENCAP_LEN;
 		hdr[ETHER_ADDR_LEN*2 + 0] = sc->esc_VET >> 8;
 		hdr[ETHER_ADDR_LEN*2 + 1] = sc->esc_VET & 0xff;
-		hdr[ETHER_ADDR_LEN*2 + 2] = dsc->td.upper.fields.special >> 8;
-		hdr[ETHER_ADDR_LEN*2 + 3] = dsc->td.upper.fields.special & 0xff;
+		hdr[ETHER_ADDR_LEN*2 + 2] = le16toh(dsc->td.upper.fields.special) >> 8;
+		hdr[ETHER_ADDR_LEN*2 + 3] = le16toh(dsc->td.upper.fields.special) & 0xff;
 		iov->iov_base = hdr;
 		iov->iov_len += ETHER_VLAN_ENCAP_LEN;
 		/* Correct checksum offsets after VLAN tag insertion. */
@@ -1374,10 +1381,10 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 	}
 
 	/* Doing TSO. */
-	tcp = (sc->esc_txctx.cmd_and_length & E1000_TXD_CMD_TCP) != 0;
-	mss = sc->esc_txctx.tcp_seg_setup.fields.mss;
-	paylen = (sc->esc_txctx.cmd_and_length & 0x000fffff);
-	DPRINTF("tx %s segmentation offload %d+%d/%d bytes %d iovs\r\n",
+	tcp = (le32toh(sc->esc_txctx.cmd_and_length) & E1000_TXD_CMD_TCP) != 0;
+	mss = le16toh(sc->esc_txctx.tcp_seg_setup.fields.mss);
+	paylen = (le32toh(sc->esc_txctx.cmd_and_length) & 0x000fffff);
+	WPRINTF("tx %s segmentation offload %d+%d/%d bytes %d iovs\r\n",
 	    tcp ? "TCP" : "UDP", hdrlen, paylen, mss, iovcnt);
 	ipid = ntohs(*(uint16_t *)&hdr[ckinfo[0].ck_start + 4]);
 	tcpseq = ntohl(*(uint32_t *)&hdr[ckinfo[1].ck_start + 4]);
@@ -1410,11 +1417,11 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 			} else
 				pvoff += nnow;
 		}
-		DPRINTF("tx segment %d %d+%d bytes %d iovs\r\n",
+		WPRINTF("tx segment %d %d+%d bytes %d iovs\r\n",
 		    seg, hdrlen, now, tiovcnt);
 
 		/* Update IP header. */
-		if (sc->esc_txctx.cmd_and_length & E1000_TXD_CMD_IP) {
+		if (le32toh(sc->esc_txctx.cmd_and_length) & E1000_TXD_CMD_IP) {
 			/* IPv4 -- set length and ID */
 			*(uint16_t *)&hdr[ckinfo[0].ck_start + 2] =
 			    htons(hdrlen - ckinfo[0].ck_start + now);
@@ -1467,7 +1474,7 @@ done:
 	return (desc + 1);
 }
 
-#if 0
+#if 1
 static void
 e82545_tx_run(struct e82545_softc *sc)
 {
@@ -1478,7 +1485,7 @@ e82545_tx_run(struct e82545_softc *sc)
 	head = sc->esc_TDH;
 	tail = sc->esc_TDT;
 	size = sc->esc_TDLEN / 16;
-	DPRINTF("tx_run: head %x, rhead %x, tail %x\r\n",
+	WPRINTF("tx_run: head %x, rhead %x, tail %x\r\n",
 	    sc->esc_TDH, sc->esc_TDHr, sc->esc_TDT);
 
 #if 0
@@ -1496,6 +1503,8 @@ e82545_tx_run(struct e82545_softc *sc)
 	pthread_mutex_lock(&sc->esc_mtx);
 #endif
 
+	printf("%s\n", __func__);
+
 	sc->esc_TDH = head;
 	sc->esc_TDHr = rhead;
 	cause = 0;
@@ -1506,7 +1515,7 @@ e82545_tx_run(struct e82545_softc *sc)
 	if (cause)
 		e82545_icr_assert(sc, cause);
 
-	DPRINTF("tx_run done: head %x, rhead %x, tail %x\r\n",
+	WPRINTF("tx_run done: head %x, rhead %x, tail %x\r\n",
 	    sc->esc_TDH, sc->esc_TDHr, sc->esc_TDT);
 }
 #endif
@@ -1536,6 +1545,24 @@ e82545_tx_thread(void *param)
 		/* Process some tx descriptors.  Lock dropped inside. */
 		e82545_tx_run(sc);
 	}
+}
+#else
+void
+e82545_tx_poll(void)
+{
+	struct e82545_softc *sc;
+
+	sc = e82545_sc;
+
+	if (sc == NULL)
+		return;
+
+	if (sc->esc_tx_enabled && sc->esc_TDHr != sc->esc_TDT) {
+		sc->esc_tx_active = 1;
+		/* Process some tx descriptors.  Lock dropped inside. */
+		e82545_tx_run(sc);
+	} else
+		sc->esc_tx_active = 0;
 }
 #endif
 
@@ -2426,6 +2453,8 @@ e82545_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 
 	/* Setup our softc */
 	sc = calloc(1, sizeof(*sc));
+
+	e82545_sc = sc;
 
 	pi->pi_arg = sc;
 	sc->esc_pi = pi;
