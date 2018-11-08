@@ -1138,7 +1138,7 @@ static void
 e82545_transmit_backend(struct e82545_softc *sc, struct iovec *iov, int iovcnt)
 {
 
-	printf("%s\n", __func__);
+	printf("%s: iovcnt %d\n", __func__, iovcnt);
 
 #if 0
 	if (sc->esc_tapfd == -1)
