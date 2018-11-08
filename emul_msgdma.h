@@ -46,13 +46,12 @@ struct msgdma_pf {
 
 struct msgdma_softc {
 	uint32_t state;
-	uint64_t fifo_base_mem;
-	uint64_t fifo_base_ctrl;
 	struct msgdma_csr csr;
 	struct msgdma_pf pf;
 	uint8_t poll_en;
 	uint8_t unit;
 	struct msgdma_desc *cur_desc;
+	struct altera_fifo_softc *fifo_sc;
 };
 
 void emul_msgdma(const struct emul_link *elink,

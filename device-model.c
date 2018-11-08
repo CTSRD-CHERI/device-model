@@ -35,6 +35,7 @@
 #include <machine/cpuregs.h>
 
 #include <mips/beri/beri_epw.h>
+#include <dev/altera/fifo/a_api.h>
 
 #include "device-model.h"
 #include "fwd_device.h"
@@ -60,6 +61,8 @@
 
 struct msgdma_softc msgdma0_sc;
 struct msgdma_softc msgdma1_sc;
+struct altera_fifo_softc fifo0_sc;
+struct altera_fifo_softc fifo1_sc;
 struct pci_softc pci0_sc;
 
 #ifdef FWD_ENABLE
@@ -81,6 +84,8 @@ const struct emul_link emul_map[DM_EMUL_NDEVICES] = {
 	{ 0x10000, 0x50000, emul_pci, &pci0_sc, PCI_GENERIC },
 };
 
+int count;
+
 static int
 dm_request(struct epw_softc *sc, struct epw_request *req)
 {
@@ -93,6 +98,7 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 
 	offset = req->addr - EPW_WINDOW;
 
+	printf("%d\n", count++);
 	dprintf("%s: offset %lx\n", __func__, offset);
 
 #ifdef FWD_ENABLE
@@ -128,13 +134,15 @@ dm_init(struct epw_softc *sc)
 	uintptr_t malloc_base;
 	int malloc_size;
 
-	msgdma0_sc.fifo_base_mem = FIFO2_BASE_MEM;
-	msgdma0_sc.fifo_base_ctrl = FIFO2_BASE_CTRL;
+	fifo0_sc.fifo_base_mem = FIFO2_BASE_MEM;
+	fifo0_sc.fifo_base_ctrl = FIFO2_BASE_CTRL;
 	msgdma0_sc.unit = 0;
+	msgdma0_sc.fifo_sc = &fifo0_sc;
 
-	msgdma1_sc.fifo_base_mem = FIFO3_BASE_MEM;
-	msgdma1_sc.fifo_base_ctrl = FIFO3_BASE_CTRL;
+	fifo1_sc.fifo_base_mem = FIFO3_BASE_MEM;
+	fifo1_sc.fifo_base_ctrl = FIFO3_BASE_CTRL;
 	msgdma1_sc.unit = 1;
+	msgdma1_sc.fifo_sc = &fifo1_sc;
 
 	malloc_base = 0xffffffffb0000000 + 0x01000000/2;
 	malloc_size = 0x01000000/2;
@@ -143,6 +151,7 @@ dm_init(struct epw_softc *sc)
 	fl_add_region(malloc_base, malloc_size);
 
 	emul_pci_init(&pci0_sc);
+	count = 0;
 }
 
 void
@@ -159,9 +168,11 @@ dm_loop(struct epw_softc *sc)
 			epw_reply(sc, &req);
 		}
 
-		usleep(100000);
+		usleep(10000);
 
+#ifdef MSGDMA_ENABLE
 		emul_msgdma_poll(&msgdma0_sc);
 		emul_msgdma_poll(&msgdma1_sc);
+#endif
 	}
 }
