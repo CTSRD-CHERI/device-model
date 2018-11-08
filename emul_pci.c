@@ -44,6 +44,7 @@
 #include "device-model.h"
 #include "emul.h"
 #include "bhyve/mem.h"
+#include "bhyve/pci_e82545.h"
 #include "emul_pci.h"
 #include "bhyve_support.h"
 
@@ -109,6 +110,9 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 	if (error == 0) {
 		dprintf("%s: dev req (is_write %d) paddr %lx, val %lx\n", __func__,
 		    req->is_write, req->addr, val);
+
+		e82545_tx_poll();
+
 		return;
 	}
 
