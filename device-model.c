@@ -35,7 +35,7 @@
 #include <machine/cpuregs.h>
 
 #include <mips/beri/beri_epw.h>
-#include <dev/altera/fifo/a_api.h>
+#include <dev/altera/fifo/fifo.h>
 
 #include "device-model.h"
 #include "fwd_device.h"
