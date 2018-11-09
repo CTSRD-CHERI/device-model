@@ -127,8 +127,8 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 			break;
 		if (sc->unit == 0)
 			processed = fifo_process_tx_one(sc->fifo_sc,
-			    reg & CONTROL_GEN_SOP,
-			    reg & CONTROL_GEN_EOP,
+			    reg & CONTROL_GEN_SOP ? 1 : 0,
+			    reg & CONTROL_GEN_EOP ? 1 : 0,
 			    le32toh(desc->read_lo),
 			    le32toh(desc->write_lo),
 			    le32toh(desc->length));

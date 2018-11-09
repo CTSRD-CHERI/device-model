@@ -2198,6 +2198,7 @@ bhyve_pci_init(struct vmctx *ctx)
 	bi = pci_businfo[bnum];
 	si = &bi->slotinfo[snum];
 
+	/* Setup e82545 device at 0/0/0 */
 	name = malloc(16);
 	sprintf(name, "e1000");
 	si->si_funcs[fnum].fi_name = name;

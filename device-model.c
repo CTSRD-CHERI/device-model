@@ -43,6 +43,7 @@
 #include "emul_msgdma.h"
 #include "emul_pci.h"
 #include "bhyve_support.h"
+#include "bhyve/pci_e82545.h"
 
 #define	DM_FWD_NDEVICES		4
 #define	DM_EMUL_NDEVICES	5
@@ -59,11 +60,14 @@
 #undef FWD_ENABLE
 #undef MSGDMA_ENABLE
 
+#define	MSGDMA_ENABLE	1
+
 struct msgdma_softc msgdma0_sc;
 struct msgdma_softc msgdma1_sc;
 struct altera_fifo_softc fifo0_sc;
 struct altera_fifo_softc fifo1_sc;
 struct pci_softc pci0_sc;
+extern struct e82545_softc *e82545_sc;
 
 #ifdef FWD_ENABLE
 const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
@@ -133,14 +137,17 @@ dm_init(struct epw_softc *sc)
 {
 	uintptr_t malloc_base;
 	int malloc_size;
+	int error;
 
 	fifo0_sc.fifo_base_mem = FIFO2_BASE_MEM;
 	fifo0_sc.fifo_base_ctrl = FIFO2_BASE_CTRL;
+	fifo0_sc.unit = 0;
 	msgdma0_sc.unit = 0;
 	msgdma0_sc.fifo_sc = &fifo0_sc;
 
 	fifo1_sc.fifo_base_mem = FIFO3_BASE_MEM;
 	fifo1_sc.fifo_base_ctrl = FIFO3_BASE_CTRL;
+	fifo0_sc.unit = 1;
 	msgdma1_sc.unit = 1;
 	msgdma1_sc.fifo_sc = &fifo1_sc;
 
@@ -152,6 +159,10 @@ dm_init(struct epw_softc *sc)
 
 	emul_pci_init(&pci0_sc);
 	count = 0;
+
+	error = e82545_setup_fifo(&fifo0_sc, &fifo1_sc);
+	if (error)
+		printf("Can't setup FIFOs\n");
 }
 
 void

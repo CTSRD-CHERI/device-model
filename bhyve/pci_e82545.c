@@ -96,6 +96,7 @@ __FBSDID("$FreeBSD$");
 #endif
 
 #include "bhyve_support.h"
+#include <dev/altera/fifo/fifo.h>
 #include <sys/linker_set.h>
 #define	TH_FIN		0x01
 #define	TH_SYN		0x02
@@ -178,6 +179,8 @@ struct e1000_rx_desc {
 #define E1000_TXD_TYP_L		(0)
 #define E1000_TXD_TYP_C		(E1000_TXD_CMD_DEXT | E1000_TXD_DTYP_C)
 #define E1000_TXD_TYP_D		(E1000_TXD_CMD_DEXT | E1000_TXD_DTYP_D)
+
+uint8_t transmit_buffer[4098] __aligned(4);
 
 /* Legacy transmit descriptor */
 struct e1000_tx_desc {
@@ -401,6 +404,10 @@ struct e82545_softc {
 #define E82545_NVM_MODE_DATAOUT 0x2
 	/* EEPROM data */
 	uint16_t eeprom_data[E82545_NVM_EEPROM_SIZE];
+
+	/* Device-model data */
+	struct altera_fifo_softc *fifo_tx;
+	struct altera_fifo_softc *fifo_rx;
 };
 
 struct e82545_softc *e82545_sc;
@@ -1137,8 +1144,23 @@ e82545_transmit_checksum(struct iovec *iov, int iovcnt, struct ck_info *ck)
 static void
 e82545_transmit_backend(struct e82545_softc *sc, struct iovec *iov, int iovcnt)
 {
+	int processed;
 
 	printf("%s: iovcnt %d\n", __func__, iovcnt);
+	int i;
+
+	for (i = 0; i < iovcnt; i++) {
+		memcpy(transmit_buffer, iov[i].iov_base, iov[i].iov_len);
+
+		processed = fifo_process_tx_one(sc->fifo_tx,
+		    i == 0 ? 1 : 0, /* sop */
+		    i == (iovcnt - 1) ? 1 : 0, /* eop */
+		    (uint64_t)transmit_buffer,
+		    0,
+		    iov[i].iov_len);
+
+		printf("%s: iov %d processed %d\n", __func__, i, processed);
+	}
 
 #if 0
 	if (sc->esc_tapfd == -1)
@@ -1371,6 +1393,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 
 	/* Simple non-TSO case. */
 	if (!tso) {
+		printf("non TSO\n");
 		/* Calculate checksums and transmit. */
 		if (ckinfo[0].ck_valid)
 			e82545_transmit_checksum(iov, iovcnt, &ckinfo[0]);
@@ -1379,6 +1402,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 		e82545_transmit_backend(sc, iov, iovcnt);
 		goto done;
 	}
+	printf("TSO case\n");
 
 	/* Doing TSO. */
 	tcp = (le32toh(sc->esc_txctx.cmd_and_length) & E1000_TXD_CMD_TCP) != 0;
@@ -1553,7 +1577,6 @@ e82545_tx_poll(void)
 	struct e82545_softc *sc;
 
 	sc = e82545_sc;
-
 	if (sc == NULL)
 		return;
 
@@ -1563,6 +1586,22 @@ e82545_tx_poll(void)
 		e82545_tx_run(sc);
 	} else
 		sc->esc_tx_active = 0;
+}
+
+int
+e82545_setup_fifo(struct altera_fifo_softc *fifo_tx,
+    struct altera_fifo_softc *fifo_rx)
+{
+	struct e82545_softc *sc;
+
+	sc = e82545_sc;
+	if (sc == NULL)
+		return (-1);
+
+	sc->fifo_tx = fifo_tx;
+	sc->fifo_rx = fifo_tx;
+
+	return (0);
 }
 #endif
 
