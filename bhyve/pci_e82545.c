@@ -180,8 +180,6 @@ struct e1000_rx_desc {
 #define E1000_TXD_TYP_C		(E1000_TXD_CMD_DEXT | E1000_TXD_DTYP_C)
 #define E1000_TXD_TYP_D		(E1000_TXD_CMD_DEXT | E1000_TXD_DTYP_D)
 
-uint8_t transmit_buffer[4098] __aligned(4);
-
 /* Legacy transmit descriptor */
 struct e1000_tx_desc {
 	uint64_t buffer_addr;   /* Address of the descriptor's data buffer */
@@ -1144,23 +1142,10 @@ e82545_transmit_checksum(struct iovec *iov, int iovcnt, struct ck_info *ck)
 static void
 e82545_transmit_backend(struct e82545_softc *sc, struct iovec *iov, int iovcnt)
 {
-	int processed;
 
 	printf("%s: iovcnt %d\n", __func__, iovcnt);
-	int i;
 
-	for (i = 0; i < iovcnt; i++) {
-		memcpy(transmit_buffer, iov[i].iov_base, iov[i].iov_len);
-
-		processed = fifo_process_tx_one(sc->fifo_tx,
-		    i == 0 ? 1 : 0, /* sop */
-		    i == (iovcnt - 1) ? 1 : 0, /* eop */
-		    (uint64_t)transmit_buffer,
-		    0,
-		    iov[i].iov_len);
-
-		printf("%s: iov %d processed %d\n", __func__, i, processed);
-	}
+	fifo_process_tx(sc->fifo_tx, iov, iovcnt);
 
 #if 0
 	if (sc->esc_tapfd == -1)
