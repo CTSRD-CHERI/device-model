@@ -413,9 +413,7 @@ struct e82545_softc *e82545_sc;
 static void e82545_reset(struct e82545_softc *sc, int dev);
 static void e82545_rx_enable(struct e82545_softc *sc);
 static void e82545_rx_disable(struct e82545_softc *sc);
-#if 0
 static void e82545_tap_callback(int fd, enum ev_type type, void *param);
-#endif
 static void e82545_tx_start(struct e82545_softc *sc);
 static void e82545_tx_enable(struct e82545_softc *sc);
 static void e82545_tx_disable(struct e82545_softc *sc);
@@ -885,7 +883,6 @@ e82545_tx_ctl(struct e82545_softc *sc, uint32_t val)
 	sc->esc_TCTL = val & ~0xFE800005;
 }
 
-#if 0
 static int
 e82545_bufsz(uint32_t rctl)
 {
@@ -902,7 +899,9 @@ e82545_bufsz(uint32_t rctl)
 	return (256);	/* Forbidden value. */
 }
 
+#if 0
 static uint8_t dummybuf[2048];
+#endif
 
 /* XXX one packet at a time until this is debugged */
 static void
@@ -923,8 +922,10 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	if (!sc->esc_rx_enabled || sc->esc_rx_loopback) {
 		DPRINTF("rx disabled (!%d || %d) -- packet(s) dropped\r\n",
 		    sc->esc_rx_enabled, sc->esc_rx_loopback);
+#if 0
 		while (read(sc->esc_tapfd, dummybuf, sizeof(dummybuf)) > 0) {
 		}
+#endif
 		goto done1;
 	}
 	bufsz = e82545_bufsz(sc->esc_RCTL);
@@ -936,8 +937,10 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	if (left < maxpktdesc) {
 		DPRINTF("rx overflow (%d < %d) -- packet(s) dropped\r\n",
 		    left, maxpktdesc);
+#if 0
 		while (read(sc->esc_tapfd, dummybuf, sizeof(dummybuf)) > 0) {
 		}
+#endif
 		goto done1;
 	}
 
@@ -955,7 +958,11 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 			    le64toh(rxd->buffer_addr), bufsz);
 			vec[i].iov_len = bufsz;
 		}
+#if 0
 		len = readv(sc->esc_tapfd, vec, maxpktdesc);
+#else
+		len = 0;
+#endif
 		if (len <= 0) {
 			DPRINTF("tap: readv() returned %d\n", len);
 			goto done;
@@ -1044,7 +1051,18 @@ done1:
 	pthread_mutex_unlock(&sc->esc_mtx);
 #endif
 }
-#endif
+
+void
+e82545_rx_poll(void)
+{
+	struct e82545_softc *sc;
+
+	sc = e82545_sc;
+	if (sc == NULL)
+		return;
+
+	e82545_tap_callback(0, 0, sc);
+}
 
 static uint16_t
 e82545_carry(uint32_t sum)
