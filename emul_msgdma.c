@@ -100,6 +100,8 @@ emul_msgdma_fifo_intr(void *arg)
 
 	sc = arg;
 
+	printf("%s(%d)\n", __func__, sc->unit);
+
 	if (sc->unit == 1)
 		emul_msgdma_poll(sc);
 }
@@ -118,6 +120,7 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 		return;
 
 	intr = intr_disable();
+	struct iovec iov;
 
 	count = 0;
 	do {
@@ -125,19 +128,23 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 		reg = le32toh(desc->control);
 		if ((reg & CONTROL_OWN) == 0)
 			break;
-		if (sc->unit == 0)
+		if (sc->unit == 0) {
+			iov.iov_base = (void *)(uint64_t)le32toh(desc->read_lo);
+			iov.iov_len = le32toh(desc->length);
+			processed = fifo_process_tx(sc->fifo_sc, &iov, 1);
+#if 0
 			processed = fifo_process_tx_one(sc->fifo_sc,
 			    reg & CONTROL_GEN_SOP ? 1 : 0,
 			    reg & CONTROL_GEN_EOP ? 1 : 0,
 			    le32toh(desc->read_lo),
 			    le32toh(desc->write_lo),
 			    le32toh(desc->length));
-		else {
+#endif
+		} else
 			processed = fifo_process_rx_one(sc->fifo_sc,
 			    le32toh(desc->read_lo),
 			    le32toh(desc->write_lo),
 			    le32toh(desc->length));
-		}
 		if (processed <= 0)
 			break;
 
@@ -172,15 +179,13 @@ emul_msgdma_poll_enable(struct msgdma_softc *sc)
 	sc->cur_desc = (struct msgdma_desc *)addr;
 	sc->poll_en = 1;
 
-	WR4_FIFO_MEMC(sc->fifo_sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_INT_ENABLE, 0);
+	fifo_interrupts_disable(sc->fifo_sc);
 
 	if (sc->unit == 1) {
 		dprintf("%s(%d): Enabling RX interrupts\n", __func__, sc->unit);
 		sc->fifo_sc->cb = emul_msgdma_fifo_intr;
 		sc->fifo_sc->cb_arg = sc;
-		WR4_FIFO_MEMC(sc->fifo_sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_EVENT, 0);
-		WR4_FIFO_MEMC(sc->fifo_sc, A_ONCHIP_FIFO_MEM_CORE_STATUS_REG_INT_ENABLE,
-		    htole32(SOFTDMA_RX_EVENTS));
+		fifo_interrupts_enable(sc->fifo_sc, SOFTDMA_RX_EVENTS);
 	}
 
 	return (0);
@@ -287,8 +292,10 @@ pf_w(struct msgdma_softc *sc, struct epw_request *req,
 	case PF_POLL_FREQ:
 		dprintf("%s: PF_POLL_FREQ val %lx\n", __func__, val);
 		pf->pf_poll_freq = val;
-		if (val != 0)
+		if (val != 0) {
+			printf("%s: enabling polling for msgdma unit%d\n", __func__, sc->unit);
 			emul_msgdma_poll_enable(sc);
+		}
 		break;
 	case PF_STATUS:
 		dprintf("%s: PF_STATUS val %lx\n", __func__, val);
