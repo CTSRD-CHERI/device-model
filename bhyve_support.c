@@ -32,6 +32,8 @@
 #include <sys/malloc.h>
 #include <sys/lock.h>
 
+#include <mips/beri/beri_epw.h>
+
 #include <machine/cpuregs.h>
 
 #include "bhyve/mem.h"
@@ -41,20 +43,33 @@
 #include "bhyve/pci_lpc.h"
 #include "bhyve_support.h"
 
+#include "device-model.h"
+#include "emul.h"
+#include "emul_msgdma.h"
+
 void
 pci_irq_assert(struct pci_devinst *pi)
 {
+	uint64_t addr;
 
+#if 0
 	printf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
+#endif
+
+	addr = BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE;
+
+	*(volatile uint64_t *)(addr) = (1 << DM_E1000_INTR);
 }
 
 void
 pci_irq_deassert(struct pci_devinst *pi)
 {
 
+#if 0
 	printf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
+#endif
 }
 
 #if 0
@@ -142,7 +157,7 @@ paddr_guest2host(struct vmctx *ctx, uintptr_t gaddr, size_t len)
 
 	addr = gaddr | MIPS_XKPHYS_UNCACHED_BASE;
 
-	printf("%s: gaddr %lx, addr %lx, len %d\n", __func__, gaddr, addr, len);
+	//printf("%s: gaddr %lx, addr %lx, len %d\n", __func__, gaddr, addr, len);
 
 	return ((void *)addr);
 }
