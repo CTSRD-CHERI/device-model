@@ -73,7 +73,7 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 	sc = elink->arg;
 
 	KASSERT(elink->type == PCI_GENERIC, ("Unknown device"));
-	KASSERT(req->data_len < 8, ("Wrong access width"));
+	KASSERT(req->data_len < 8, ("Wrong access width %d", req->data_len));
 
 	offset = req->addr - elink->base_emul - EPW_WINDOW;
 
@@ -110,9 +110,6 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 	if (error == 0) {
 		dprintf("%s: dev req (is_write %d) paddr %lx, val %lx\n", __func__,
 		    req->is_write, req->addr, val);
-
-		e82545_tx_poll();
-
 		return;
 	}
 

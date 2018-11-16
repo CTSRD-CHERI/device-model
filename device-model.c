@@ -33,6 +33,7 @@
 #include <sys/malloc.h>
 
 #include <machine/cpuregs.h>
+#include <machine/cpufunc.h>
 
 #include <mips/beri/beri_epw.h>
 #include <dev/altera/fifo/fifo.h>
@@ -60,14 +61,14 @@
 #undef FWD_ENABLE
 #undef MSGDMA_ENABLE
 
-#define	MSGDMA_ENABLE	1
-
 struct msgdma_softc msgdma0_sc;
 struct msgdma_softc msgdma1_sc;
 struct altera_fifo_softc fifo0_sc;
 struct altera_fifo_softc fifo1_sc;
 struct pci_softc pci0_sc;
 extern struct e82545_softc *e82545_sc;
+
+int count;
 
 #ifdef FWD_ENABLE
 const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
@@ -88,8 +89,6 @@ const struct emul_link emul_map[DM_EMUL_NDEVICES] = {
 	{ 0x10000, 0x50000, emul_pci, &pci0_sc, PCI_GENERIC },
 };
 
-int count;
-
 static int
 dm_request(struct epw_softc *sc, struct epw_request *req)
 {
@@ -102,7 +101,6 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 
 	offset = req->addr - EPW_WINDOW;
 
-	printf("%d\n", count++);
 	dprintf("%s: offset %lx\n", __func__, offset);
 
 #ifdef FWD_ENABLE
@@ -147,7 +145,7 @@ dm_init(struct epw_softc *sc)
 
 	fifo1_sc.fifo_base_mem = FIFO3_BASE_MEM;
 	fifo1_sc.fifo_base_ctrl = FIFO3_BASE_CTRL;
-	fifo0_sc.unit = 1;
+	fifo1_sc.unit = 1;
 	msgdma1_sc.unit = 1;
 	msgdma1_sc.fifo_sc = &fifo1_sc;
 
@@ -160,9 +158,12 @@ dm_init(struct epw_softc *sc)
 	emul_pci_init(&pci0_sc);
 	count = 0;
 
+	printf("%s: setting up fifos\n", __func__);
 	error = e82545_setup_fifo(&fifo0_sc, &fifo1_sc);
 	if (error)
-		printf("Can't setup FIFOs\n");
+		panic("Can't setup FIFOs\n");
+
+	printf("%s: device-model initialized\n", __func__);
 }
 
 void
@@ -174,16 +175,27 @@ dm_loop(struct epw_softc *sc)
 	printf("Hello World!\n");
 
 	while (1) {
+		//printf("%d\n", count++);
+
 		if (epw_request(sc, &req) != 0) {
 			ret = dm_request(sc, &req);
 			epw_reply(sc, &req);
 		}
 
-		usleep(10000);
+		usleep(5000);
 
 #ifdef MSGDMA_ENABLE
 		emul_msgdma_poll(&msgdma0_sc);
 		emul_msgdma_poll(&msgdma1_sc);
+#else
+		int intr;
+		intr = intr_disable();
+		e82545_tx_poll();
+		intr_restore(intr);
+
+		intr = intr_disable();
+		e82545_rx_poll(NULL);
+		intr_restore(intr);
 #endif
 	}
 }
