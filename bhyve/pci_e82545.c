@@ -180,6 +180,11 @@ struct e1000_rx_desc {
 #define E1000_TXD_TYP_C		(E1000_TXD_CMD_DEXT | E1000_TXD_DTYP_C)
 #define E1000_TXD_TYP_D		(E1000_TXD_CMD_DEXT | E1000_TXD_DTYP_D)
 
+#define	FIFO_RX_EVENTS	\
+	(A_ONCHIP_FIFO_MEM_CORE_INTR_FULL	| \
+	 A_ONCHIP_FIFO_MEM_CORE_INTR_OVERFLOW	| \
+	 A_ONCHIP_FIFO_MEM_CORE_INTR_UNDERFLOW)
+
 /* Legacy transmit descriptor */
 struct e1000_tx_desc {
 	uint64_t buffer_addr;   /* Address of the descriptor's data buffer */
@@ -961,7 +966,7 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 #if 0
 		len = readv(sc->esc_tapfd, vec, maxpktdesc);
 #else
-		len = 0;
+		len = fifo_process_rx(sc->fifo_rx, vec, maxpktdesc);
 #endif
 		if (len <= 0) {
 			DPRINTF("tap: readv() returned %d\n", len);
@@ -1000,14 +1005,14 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 		/* Update all consumed descriptors. */
 		for (i = 0; i < n - 1; i++) {
 			rxd = &sc->esc_rxdesc[(head + i) % size];
-			rxd->length = bufsz;
+			rxd->length = htole16(bufsz);
 			rxd->csum = 0;
 			rxd->errors = 0;
 			rxd->special = 0;
 			rxd->status = E1000_RXD_STAT_DD;
 		}
 		rxd = &sc->esc_rxdesc[(head + i) % size];
-		rxd->length = len % bufsz;
+		rxd->length = htole16(len % bufsz);
 		rxd->csum = 0;
 		rxd->errors = 0;
 		rxd->special = 0;
@@ -1050,18 +1055,6 @@ done1:
 #if 0
 	pthread_mutex_unlock(&sc->esc_mtx);
 #endif
-}
-
-void
-e82545_rx_poll(void)
-{
-	struct e82545_softc *sc;
-
-	sc = e82545_sc;
-	if (sc == NULL)
-		return;
-
-	e82545_tap_callback(0, 0, sc);
 }
 
 static uint16_t
@@ -1161,8 +1154,6 @@ static void
 e82545_transmit_backend(struct e82545_softc *sc, struct iovec *iov, int iovcnt)
 {
 
-	printf("%s: iovcnt %d\n", __func__, iovcnt);
-
 	fifo_process_tx(sc->fifo_tx, iov, iovcnt);
 
 #if 0
@@ -1225,7 +1216,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 		if (desc == 0) {
 			switch (dtype) {
 			case E1000_TXD_TYP_C:
-				WPRINTF("tx ctxt desc idx %d: %016jx "
+				DPRINTF("tx ctxt desc idx %d: %016jx "
 				    "%08x%08x\r\n",
 				    head, le64toh(dsc->td.buffer_addr),
 				    le32toh(dsc->td.upper.data), le32toh(dsc->td.lower.data));
@@ -1233,7 +1224,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 				sc->esc_txctx = dsc->cd;
 				goto done;
 			case E1000_TXD_TYP_L:
-				WPRINTF("tx legacy desc idx %d: %08x%08x\r\n",
+				DPRINTF("tx legacy desc idx %d: %08x%08x\r\n",
 				    head, le32toh(dsc->td.upper.data), le32toh(dsc->td.lower.data));
 				/*
 				 * legacy cksum start valid in first descriptor
@@ -1242,7 +1233,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 				ckinfo[0].ck_start = dsc->td.upper.fields.css;
 				break;
 			case E1000_TXD_TYP_D:
-				WPRINTF("tx data desc idx %d: %08x%08x\r\n",
+				DPRINTF("tx data desc idx %d: %08x%08x\r\n",
 				    head, le32toh(dsc->td.upper.data), le32toh(dsc->td.lower.data));
 				ntype = dtype;
 				break;
@@ -1253,7 +1244,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 		} else {
 			/* Descriptor type must be consistent */
 			assert(dtype == ntype);
-			WPRINTF("tx next desc idx %d: %08x%08x\r\n",
+			DPRINTF("tx next desc idx %d: %08x%08x\r\n",
 			    head, le32toh(dsc->td.upper.data), le32toh(dsc->td.lower.data));
 		}
 
@@ -1396,7 +1387,6 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 
 	/* Simple non-TSO case. */
 	if (!tso) {
-		printf("non TSO\n");
 		/* Calculate checksums and transmit. */
 		if (ckinfo[0].ck_valid)
 			e82545_transmit_checksum(iov, iovcnt, &ckinfo[0]);
@@ -1405,13 +1395,12 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 		e82545_transmit_backend(sc, iov, iovcnt);
 		goto done;
 	}
-	printf("TSO case\n");
 
 	/* Doing TSO. */
 	tcp = (le32toh(sc->esc_txctx.cmd_and_length) & E1000_TXD_CMD_TCP) != 0;
 	mss = le16toh(sc->esc_txctx.tcp_seg_setup.fields.mss);
 	paylen = (le32toh(sc->esc_txctx.cmd_and_length) & 0x000fffff);
-	WPRINTF("tx %s segmentation offload %d+%d/%d bytes %d iovs\r\n",
+	DPRINTF("tx %s segmentation offload %d+%d/%d bytes %d iovs\r\n",
 	    tcp ? "TCP" : "UDP", hdrlen, paylen, mss, iovcnt);
 	ipid = ntohs(*(uint16_t *)&hdr[ckinfo[0].ck_start + 4]);
 	tcpseq = ntohl(*(uint32_t *)&hdr[ckinfo[1].ck_start + 4]);
@@ -1444,7 +1433,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 			} else
 				pvoff += nnow;
 		}
-		WPRINTF("tx segment %d %d+%d bytes %d iovs\r\n",
+		DPRINTF("tx segment %d %d+%d bytes %d iovs\r\n",
 		    seg, hdrlen, now, tiovcnt);
 
 		/* Update IP header. */
@@ -1512,7 +1501,7 @@ e82545_tx_run(struct e82545_softc *sc)
 	head = sc->esc_TDH;
 	tail = sc->esc_TDT;
 	size = sc->esc_TDLEN / 16;
-	WPRINTF("tx_run: head %x, rhead %x, tail %x\r\n",
+	DPRINTF("tx_run: head %x, rhead %x, tail %x\r\n",
 	    sc->esc_TDH, sc->esc_TDHr, sc->esc_TDT);
 
 #if 0
@@ -1530,8 +1519,6 @@ e82545_tx_run(struct e82545_softc *sc)
 	pthread_mutex_lock(&sc->esc_mtx);
 #endif
 
-	printf("%s\n", __func__);
-
 	sc->esc_TDH = head;
 	sc->esc_TDHr = rhead;
 	cause = 0;
@@ -1542,7 +1529,7 @@ e82545_tx_run(struct e82545_softc *sc)
 	if (cause)
 		e82545_icr_assert(sc, cause);
 
-	WPRINTF("tx_run done: head %x, rhead %x, tail %x\r\n",
+	DPRINTF("tx_run done: head %x, rhead %x, tail %x\r\n",
 	    sc->esc_TDH, sc->esc_TDHr, sc->esc_TDT);
 }
 #endif
@@ -1591,6 +1578,20 @@ e82545_tx_poll(void)
 		sc->esc_tx_active = 0;
 }
 
+void
+e82545_rx_poll(void *arg)
+{
+	struct e82545_softc *sc;
+
+	sc = e82545_sc;
+	if (sc == NULL)
+		return;
+
+	e82545_tap_callback(0, 0, sc);
+
+	fifo_interrupts_enable(sc->fifo_rx, FIFO_RX_EVENTS);
+}
+
 int
 e82545_setup_fifo(struct altera_fifo_softc *fifo_tx,
     struct altera_fifo_softc *fifo_rx)
@@ -1602,7 +1603,15 @@ e82545_setup_fifo(struct altera_fifo_softc *fifo_tx,
 		return (-1);
 
 	sc->fifo_tx = fifo_tx;
-	sc->fifo_rx = fifo_tx;
+	sc->fifo_rx = fifo_rx;
+
+	fifo_interrupts_disable(fifo_tx);
+	fifo_interrupts_disable(fifo_rx);
+
+	printf("%s: Enabling RX interrupts\n", __func__);
+	fifo_rx->cb = e82545_rx_poll;
+	fifo_rx->cb_arg = NULL;
+	fifo_interrupts_enable(fifo_rx, FIFO_RX_EVENTS);
 
 	return (0);
 }
@@ -2589,6 +2598,13 @@ e82545_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 		sc->esc_mac.octet[3] = digest[0];
 		sc->esc_mac.octet[4] = digest[1];
 		sc->esc_mac.octet[5] = digest[2];
+
+		sc->esc_mac.octet[0] = 0x00;
+		sc->esc_mac.octet[1] = 0x07;
+		sc->esc_mac.octet[2] = 0xed;
+		sc->esc_mac.octet[3] = 0x63;
+		sc->esc_mac.octet[4] = 0xe4;
+		sc->esc_mac.octet[5] = 0x91;
 	}
 
 	/* H/w initiated reset */
