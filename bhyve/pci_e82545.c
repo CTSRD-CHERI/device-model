@@ -966,7 +966,7 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 #if 0
 		len = readv(sc->esc_tapfd, vec, maxpktdesc);
 #else
-		len = fifo_process_rx(sc->fifo_rx, vec, maxpktdesc);
+		len = fifo_process_rx(sc->fifo_rx, vec, maxpktdesc, 2);
 #endif
 		if (len <= 0) {
 			DPRINTF("tap: readv() returned %d\n", len);
