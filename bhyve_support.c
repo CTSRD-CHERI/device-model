@@ -47,15 +47,22 @@
 #include "emul.h"
 #include "emul_msgdma.h"
 
+#define	BS_DEBUG
+#undef	BS_DEBUG
+
+#ifdef	BS_DEBUG
+#define	dprintf(fmt, ...)	printf(fmt, ##__VA_ARGS__)
+#else
+#define	dprintf(fmt, ...)
+#endif
+
 void
 pci_irq_assert(struct pci_devinst *pi)
 {
 	uint64_t addr;
 
-#if 0
-	printf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
+	dprintf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
-#endif
 
 	addr = BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE;
 
@@ -66,10 +73,8 @@ void
 pci_irq_deassert(struct pci_devinst *pi)
 {
 
-#if 0
-	printf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
+	dprintf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
-#endif
 }
 
 #if 0
@@ -77,7 +82,7 @@ int
 register_mem(struct mem_range *memp)
 {
 
-	printf("%s: name %s base %lx size %lx\n",
+	dprintf("%s: name %s base %lx size %lx\n",
 	    __func__, memp->name, memp->base, memp->size);
 
 	return (0);
@@ -87,7 +92,7 @@ int
 unregister_mem(struct mem_range *memp)
 {
 
-	printf("%s: name %s base %lx size %lx\n",
+	dprintf("%s: name %s base %lx size %lx\n",
 	    __func__, memp->name, memp->base, memp->size);
 
 	return (0);
@@ -97,7 +102,7 @@ int
 register_mem_fallback(struct mem_range *memp)
 {
 
-	printf("%s: name %s base %lx size %lx\n",
+	dprintf("%s: name %s base %lx size %lx\n",
 	    __func__, memp->name, memp->base, memp->size);
 
 	return (0);
@@ -108,7 +113,7 @@ int
 register_inout(struct inout_port *iop)
 {
 
-	printf("%s: name %s port %d size %d\n",
+	dprintf("%s: name %s port %d size %d\n",
 	    __func__, iop->name, iop->port, iop->size);
 
 	return (0);
@@ -118,7 +123,7 @@ int
 unregister_inout(struct inout_port *iop)
 {
 
-	printf("%s: name %s port %d size %d\n",
+	dprintf("%s: name %s port %d size %d\n",
 	    __func__, iop->name, iop->port, iop->size);
 
 	return (0);
@@ -128,7 +133,7 @@ int
 pirq_alloc_pin(struct pci_devinst *pi)
 {
 
-	printf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
+	dprintf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
 
 	return (0);
@@ -138,7 +143,7 @@ int
 pirq_irq(int pin)
 {
 
-	printf("%s: pin %d\n", __func__, pin);
+	dprintf("%s: pin %d\n", __func__, pin);
 
 	return (0);
 }
@@ -147,7 +152,7 @@ void
 lpc_pirq_routed(void)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 }
 
 void *
@@ -155,9 +160,9 @@ paddr_guest2host(struct vmctx *ctx, uintptr_t gaddr, size_t len)
 {
 	uintptr_t addr;
 
-	addr = gaddr | MIPS_XKPHYS_UNCACHED_BASE;
+	dprintf("%s: gaddr %lx, addr %lx, len %d\n", __func__, gaddr, addr, len);
 
-	//printf("%s: gaddr %lx, addr %lx, len %d\n", __func__, gaddr, addr, len);
+	addr = gaddr | MIPS_XKPHYS_UNCACHED_BASE;
 
 	return ((void *)addr);
 }
