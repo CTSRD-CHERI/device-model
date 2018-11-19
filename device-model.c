@@ -68,7 +68,7 @@ struct altera_fifo_softc fifo1_sc;
 struct pci_softc pci0_sc;
 extern struct e82545_softc *e82545_sc;
 
-int count;
+int req_count;
 
 #ifdef FWD_ENABLE
 const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
@@ -156,9 +156,8 @@ dm_init(struct epw_softc *sc)
 	fl_add_region(malloc_base, malloc_size);
 
 	emul_pci_init(&pci0_sc);
-	count = 0;
+	req_count = 0;
 
-	printf("%s: setting up fifos\n", __func__);
 	error = e82545_setup_fifo(&fifo0_sc, &fifo1_sc);
 	if (error)
 		panic("Can't setup FIFOs\n");
@@ -175,7 +174,7 @@ dm_loop(struct epw_softc *sc)
 	printf("Hello World!\n");
 
 	while (1) {
-		//printf("%d\n", count++);
+		req_count++;
 
 		if (epw_request(sc, &req) != 0) {
 			ret = dm_request(sc, &req);
