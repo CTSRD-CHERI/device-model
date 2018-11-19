@@ -73,29 +73,29 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 	sc = elink->arg;
 
 	KASSERT(elink->type == PCI_GENERIC, ("Unknown device"));
-	KASSERT(req->data_len < 8, ("Wrong access width %d", req->data_len));
 
 	offset = req->addr - elink->base_emul - EPW_WINDOW;
 
-	switch (req->data_len) {
-	case 8:
-		val = *(uint64_t *)req->data;
-		val = bswap64(val);
-		break;
-	case 4:
-		val = *(uint32_t *)req->data;
-		val = bswap32(val);
-		break;
-	case 2:
-		val = *(uint16_t *)req->data;
-		val = bswap16(val);
-		break;
-	case 1:
-		val = *(uint8_t *)req->data;
-		break;
-	}
-
 	if (req->is_write) {
+		KASSERT(req->data_len < 8, ("Wrong access width %d", req->data_len));
+		switch (req->data_len) {
+		case 8:
+			val = *(uint64_t *)req->data;
+			val = bswap64(val);
+			break;
+		case 4:
+			val = *(uint32_t *)req->data;
+			val = bswap32(val);
+			break;
+		case 2:
+			val = *(uint16_t *)req->data;
+			val = bswap16(val);
+			break;
+		case 1:
+			val = *(uint8_t *)req->data;
+			break;
+		}
+
 		error = emulate_mem(sc->ctx, 0, req->addr, req->is_write, req->flit_size, &val);
 		dprintf("Error %d, val %lx\n", error, val);
 	} else {
