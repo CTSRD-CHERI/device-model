@@ -91,9 +91,7 @@ __FBSDID("$FreeBSD$");
 #endif
 #include "pci_emul.h"
 #include "pci_e82545.h"
-#if 1
 #include "mevent.h"
-#endif
 
 #include "bhyve_support.h"
 #include <dev/altera/fifo/fifo.h>
@@ -1490,7 +1488,6 @@ done:
 	return (desc + 1);
 }
 
-#if 1
 static void
 e82545_tx_run(struct e82545_softc *sc)
 {
@@ -1532,7 +1529,6 @@ e82545_tx_run(struct e82545_softc *sc)
 	DPRINTF("tx_run done: head %x, rhead %x, tail %x\r\n",
 	    sc->esc_TDH, sc->esc_TDHr, sc->esc_TDT);
 }
-#endif
 
 #if 0
 static _Noreturn void *

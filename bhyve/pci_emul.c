@@ -2202,10 +2202,7 @@ bhyve_pci_init(struct vmctx *ctx)
 	name = malloc(16);
 	sprintf(name, "e1000");
 	si->si_funcs[fnum].fi_name = name;
-
-#if 0
-	si->si_funcs[fnum].fi_param = config;
-#endif
+	si->si_funcs[fnum].fi_param = NULL;
 
 	init_pci(ctx);
 
