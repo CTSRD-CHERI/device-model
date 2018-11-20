@@ -128,15 +128,16 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 		reg = le32toh(desc->control);
 		if ((reg & CONTROL_OWN) == 0)
 			break;
+		iov.iov_len = le32toh(desc->length);
 		if (sc->unit == 0) {
-			iov.iov_base = (void *)(uint64_t)le32toh(desc->read_lo);
-			iov.iov_len = le32toh(desc->length);
+			iov.iov_base = (void *)((uint64_t)le32toh(desc->read_lo) |
+			    MIPS_XKPHYS_UNCACHED_BASE);
 			processed = fifo_process_tx(sc->fifo_sc, &iov, 1);
-		} else
-			processed = fifo_process_rx_one(sc->fifo_sc,
-			    le32toh(desc->read_lo),
-			    le32toh(desc->write_lo),
-			    le32toh(desc->length));
+		} else {
+			iov.iov_base = (void *)((uint64_t)le32toh(desc->write_lo) |
+			    MIPS_XKPHYS_UNCACHED_BASE);
+			processed = fifo_process_rx(sc->fifo_sc, &iov, 1, 0);
+		}
 		if (processed <= 0)
 			break;
 
