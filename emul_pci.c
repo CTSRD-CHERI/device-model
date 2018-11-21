@@ -80,7 +80,8 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 	offset = req->addr - elink->base_emul - EPW_WINDOW;
 
 	if (req->is_write) {
-		KASSERT(req->data_len < 8, ("Wrong access width %d", req->data_len));
+		KASSERT(req->data_len < 8,
+		    ("Wrong access width %d", req->data_len));
 		switch (req->data_len) {
 		case 8:
 			val = *(uint64_t *)req->data;
@@ -99,37 +100,45 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 			break;
 		}
 
-		error = emulate_mem(sc->ctx, 0, req->addr, req->is_write, req->flit_size, &val);
+		error = emulate_mem(sc->ctx, 0, req->addr, req->is_write,
+		    req->flit_size, &val);
 		dprintf("Error %d, val %lx\n", error, val);
 	} else {
 		bytes = req->data_len;
-		error = emulate_mem(sc->ctx, 0, req->addr, req->is_write, req->flit_size, (uint64_t *)&val8[0]);
+		error = emulate_mem(sc->ctx, 0, req->addr, req->is_write,
+		    req->flit_size, (uint64_t *)&val8[0]);
 		if (error == 0)
 			for (i = 0; i < bytes; i++)
 				/* TODO: is offset required here ? */
-				req->data[8 - bytes - offset % 8 + i] = val8[7 - i];
+				req->data[8 - bytes - offset % 8 + i] =
+				    val8[7 - i];
 	}
 
 	if (error == 0) {
-		dprintf("%s: dev req (is_write %d) paddr %lx, val %lx\n", __func__,
-		    req->is_write, req->addr, val);
+		dprintf("%s: dev req (is_write %d) paddr %lx, val %lx\n",
+		    __func__, req->is_write, req->addr, val);
 		return;
 	}
 
 	if (req->is_write) {
 		bytes = req->data_len;
-		printf("%s: %d-bytes write to %lx, val %lx\n", __func__, bytes, offset, val);
+		printf("%s: %d-bytes write to %lx, val %lx\n",
+		    __func__, bytes, offset, val);
 		bcopy((void *)&req->data[0], &val8[4 - bytes], bytes);
-		bhyve_pci_cfgrw(sc->ctx, 0, 0, 0, 0, offset, bytes, (uint32_t *)&val8[0]);
+		bhyve_pci_cfgrw(sc->ctx, 0, 0, 0, 0, offset,
+		    bytes, (uint32_t *)&val8[0]);
 	} else {
 		bzero((void *)&req->data[0], 32);
 		bytes = req->flit_size;
 
-		dprintf("%s: %d-bytes read from %lx, ", __func__, bytes, offset);
-		bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, offset, bytes, (uint32_t *)&val8[0]);
+		dprintf("%s: %d-bytes read from %lx, ",
+		    __func__, bytes, offset);
+		bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, offset,
+		    bytes, (uint32_t *)&val8[0]);
 
 		len = bytes + offset % 8;
-		bcopy((void *)&val8[4 - bytes], (void *)&req->data[8 - len], bytes);
+		bcopy((void *)&val8[4 - bytes],
+		    (void *)&req->data[8 - len], bytes);
 	}
 }
 

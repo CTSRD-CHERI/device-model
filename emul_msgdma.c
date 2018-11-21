@@ -133,11 +133,13 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 			break;
 		iov.iov_len = le32toh(desc->length);
 		if (sc->unit == 0) {
-			iov.iov_base = (void *)((uint64_t)le32toh(desc->read_lo) |
+			iov.iov_base =
+			    (void *)((uint64_t)le32toh(desc->read_lo) |
 			    MIPS_XKPHYS_UNCACHED_BASE);
 			processed = fifo_process_tx(sc->fifo_sc, &iov, 1);
 		} else {
-			iov.iov_base = (void *)((uint64_t)le32toh(desc->write_lo) |
+			iov.iov_base =
+			    (void *)((uint64_t)le32toh(desc->write_lo) |
 			    MIPS_XKPHYS_UNCACHED_BASE);
 			processed = fifo_process_rx(sc->fifo_sc, &iov, 1, 0);
 		}
@@ -178,7 +180,8 @@ emul_msgdma_poll_enable(struct msgdma_softc *sc)
 	fifo_interrupts_disable(sc->fifo_sc);
 
 	if (sc->unit == 1) {
-		dprintf("%s(%d): Enabling RX interrupts\n", __func__, sc->unit);
+		dprintf("%s(%d): Enabling RX interrupts\n",
+		    __func__, sc->unit);
 		sc->fifo_sc->cb = emul_msgdma_fifo_intr;
 		sc->fifo_sc->cb_arg = sc;
 		fifo_interrupts_enable(sc->fifo_sc, SOFTDMA_RX_EVENTS);
@@ -289,7 +292,8 @@ pf_w(struct msgdma_softc *sc, struct epw_request *req,
 		dprintf("%s: PF_POLL_FREQ val %lx\n", __func__, val);
 		pf->pf_poll_freq = val;
 		if (val != 0) {
-			printf("%s: enabling polling for msgdma unit%d\n", __func__, sc->unit);
+			printf("%s: enabling polling for msgdma unit%d\n",
+			    __func__, sc->unit);
 			emul_msgdma_poll_enable(sc);
 		}
 		break;
