@@ -9,7 +9,9 @@ LDSCRIPT =	${.CURDIR}/ldscript
 
 OBJECTS =	alloc.o						\
 		bhyve/mem.o					\
+		bhyve/block_if.o				\
 		bhyve/pci_emul.o				\
+		bhyve/pci_ahci.o				\
 		bhyve/pci_e82545.o				\
 		bhyve_support.o					\
 		device-model.o					\
@@ -17,6 +19,7 @@ OBJECTS =	alloc.o						\
 		emul_pci.o					\
 		fwd_device.o					\
 		main.o						\
+		osfive/lib/md5/md5.o				\
 		osfive/sys/dev/altera/fifo/fifo.o		\
 		osfive/sys/dev/altera/jtag_uart/jtag_uart.o	\
 		osfive/sys/mips/beri/beripic.o			\
