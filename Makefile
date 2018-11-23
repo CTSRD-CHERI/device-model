@@ -52,7 +52,7 @@ WARNFLAGS =			\
 	-Wno-pointer-sign	\
 	-Wmissing-include-dirs
 
-CFLAGS = -target mips64 -march=mips64 			\
+CFLAGS = -march=mips64 -mcpu=mips4	\
 	-G0 -O -g -nostdinc -mno-abicalls -msoft-float	\
 	-fwrapv -fno-builtin-printf ${WARNFLAGS} -DWITHOUT_CAPSICUM=1
 
