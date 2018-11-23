@@ -2204,6 +2204,14 @@ bhyve_pci_init(struct vmctx *ctx)
 	si->si_funcs[fnum].fi_name = name;
 	si->si_funcs[fnum].fi_param = NULL;
 
+	/* Setup AHCI device at 0/1/0 */
+	snum = 1;
+	si = &bi->slotinfo[snum];
+	name = malloc(16);
+	sprintf(name, "ahci-hd");
+	si->si_funcs[fnum].fi_name = name;
+	si->si_funcs[fnum].fi_param = NULL;
+
 	init_pci(ctx);
 
 	return (0);
