@@ -72,12 +72,18 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 	int i;
 	uint8_t val8[8];
 	uint32_t len;
+	int bus, slot, func, coff;
 
 	sc = elink->arg;
 
 	KASSERT(elink->type == PCI_GENERIC, ("Unknown device"));
 
 	offset = req->addr - elink->base_emul - EPW_WINDOW;
+
+	coff = offset & 0xfff;
+	func = (offset >> 12) & 0x7;
+	slot = (offset >> 15) & 0x1f;
+	bus = (offset >> 20) & 0xff;
 
 	if (req->is_write) {
 		KASSERT(req->data_len < 8,
@@ -122,19 +128,20 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 
 	if (req->is_write) {
 		bytes = req->data_len;
-		printf("%s: %d-bytes write to %lx, val %lx\n",
-		    __func__, bytes, offset, val);
+		printf("%s (%d/%d/%d): %d-bytes write to %lx, val %lx\n",
+		    __func__, bus, slot, func, bytes, offset, val);
 		bcopy((void *)&req->data[0], &val8[4 - bytes], bytes);
-		bhyve_pci_cfgrw(sc->ctx, 0, 0, 0, 0, offset,
+		bhyve_pci_cfgrw(sc->ctx, 0, bus, slot, func, coff,
 		    bytes, (uint32_t *)&val8[0]);
 	} else {
 		bzero((void *)&req->data[0], 32);
 		bytes = req->flit_size;
 
-		dprintf("%s: %d-bytes read from %lx, ",
-		    __func__, bytes, offset);
-		bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, offset,
+		printf("%s (%d/%d/%d): %d-bytes read from %lx, ",
+		    __func__, bus, slot, func, bytes, offset);
+		bhyve_pci_cfgrw(sc->ctx, 1, bus, slot, func, coff,
 		    bytes, (uint32_t *)&val8[0]);
+		printf("val %x\n", *(uint32_t *)&val8[0]);
 
 		len = bytes + offset % 8;
 		bcopy((void *)&val8[4 - bytes],
@@ -155,7 +162,10 @@ emul_pci_init(struct pci_softc *sc)
 
 	/* Test request */
 	bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, 0x00, 2, (uint32_t *)&val);
-	printf("val 0x%x\n", val);
+	printf("slot 0 val 0x%x\n", val);
+
+	bhyve_pci_cfgrw(sc->ctx, 1, 0, 1, 0, 0x00, 2, (uint32_t *)&val);
+	printf("slot 1 val 0x%x\n", val);
 
 	return (0);
 }
