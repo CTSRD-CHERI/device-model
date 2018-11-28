@@ -139,6 +139,12 @@ pirq_alloc_pin(struct pci_devinst *pi)
 	dprintf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
 
+	if (strcmp(pi->pi_name, "e1000-pci-0") == 0)
+		return (1);
+
+	if (strcmp(pi->pi_name, "ahci-hd-pci-1") == 0)
+		return (2);
+
 	return (0);
 }
 
