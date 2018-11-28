@@ -19,6 +19,7 @@ OBJECTS =	alloc.o						\
 		emul_pci.o					\
 		fwd_device.o					\
 		main.o						\
+		osfive/lib/libc/gen/assert.o			\
 		osfive/lib/md5/md5.o				\
 		osfive/sys/dev/altera/fifo/fifo.o		\
 		osfive/sys/dev/altera/jtag_uart/jtag_uart.o	\
