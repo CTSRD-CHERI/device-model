@@ -54,6 +54,7 @@
 #define	DM_MSGDMA1_INTR		17
 
 #define	DM_E1000_INTR		19
+#define	DM_AHCI_INTR		20
 
 #define	FIFO0_BASE_MEM		0x7f007400
 #define	FIFO0_BASE_CTRL		0x7f007420
