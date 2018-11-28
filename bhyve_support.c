@@ -163,10 +163,10 @@ paddr_guest2host(struct vmctx *ctx, uintptr_t gaddr, size_t len)
 {
 	uintptr_t addr;
 
+	addr = gaddr | MIPS_XKPHYS_UNCACHED_BASE;
+
 	dprintf("%s: gaddr %lx, addr %lx, len %d\n",
 	    __func__, gaddr, addr, len);
-
-	addr = gaddr | MIPS_XKPHYS_UNCACHED_BASE;
 
 	return ((void *)addr);
 }
