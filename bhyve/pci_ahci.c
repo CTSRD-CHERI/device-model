@@ -123,12 +123,17 @@ enum sata_fis_type {
 #define	ATA_SATA_SF_AN			0x05
 #define	ATA_SF_DIS_SATA_SF		0x90
 
+#define	AHCI_DEBUG	1
 /*
  * Debug printf
  */
 #ifdef AHCI_DEBUG
 static FILE *dbg;
+#if 0
 #define DPRINTF(format, arg...)	do{fprintf(dbg, format, ##arg);fflush(dbg);}while(0)
+#else
+#define DPRINTF(format, arg...)	do{printf(format, ##arg);}while(0)
+#endif
 #else
 #define DPRINTF(format, arg...)
 #endif
@@ -551,6 +556,8 @@ ahci_port_reset(struct ahci_port *pr)
 	pr->xfermode = ATA_UDMA6;
 	pr->mult_sectors = 128;
 
+	printf("%s\n", __func__);
+
 	if (!pr->bctx) {
 		pr->ssts = ATA_SS_DET_NO_DEVICE;
 		pr->sig = 0xFFFFFFFF;
@@ -569,6 +576,8 @@ ahci_port_reset(struct ahci_port *pr)
 	} else
 		pr->sig = PxSIG_ATAPI;
 	ahci_write_reset_fis_d2h(pr);
+
+	printf("%s: done\n", __func__);
 }
 
 static void
@@ -578,6 +587,8 @@ ahci_reset(struct pci_ahci_softc *sc)
 
 	sc->ghc = AHCI_GHC_AE;
 	sc->is = 0;
+
+	printf("%s\n", __func__);
 
 	if (sc->lintr) {
 		pci_lintr_deassert(sc->asc_pi);
@@ -593,6 +604,8 @@ ahci_reset(struct pci_ahci_softc *sc)
 		sc->port[i].sctl = 0;
 		ahci_port_reset(&sc->port[i]);
 	}
+
+	printf("%s: done\n", __func__);
 }
 
 static void
@@ -638,7 +651,7 @@ ahci_build_iov(struct ahci_port *p, struct ahci_ioreq *aior,
 	todo = 0;
 	for (i = 0, j = 0; i < prdtl && j < BLOCKIF_IOV_MAX && left > 0;
 	    i++, prdt++) {
-		dbcsz = (prdt->dbc & DBCMASK) + 1;
+		dbcsz = (le32toh(prdt->dbc) & DBCMASK) + 1;
 		/* Skip already done part of the PRDT */
 		if (dbcsz <= skip) {
 			skip -= dbcsz;
@@ -648,7 +661,7 @@ ahci_build_iov(struct ahci_port *p, struct ahci_ioreq *aior,
 		if (dbcsz > left)
 			dbcsz = left;
 		breq->br_iov[j].iov_base = paddr_guest2host(ahci_ctx(p->pr_sc),
-		    prdt->dba + skip, dbcsz);
+		    le64toh(prdt->dba) + skip, dbcsz);
 		breq->br_iov[j].iov_len = dbcsz;
 		todo += dbcsz;
 		left -= dbcsz;
@@ -745,7 +758,7 @@ ahci_handle_rw(struct ahci_port *p, int slot, uint8_t *cfis, uint32_t done)
 	aior->done = done;
 	breq = &aior->io_req;
 	breq->br_offset = lba + done;
-	ahci_build_iov(p, aior, prdt, hdr->prdtl);
+	ahci_build_iov(p, aior, prdt, le16toh(hdr->prdtl));
 
 	/* Mark this command in-flight. */
 	p->pending |= 1 << slot;
@@ -810,13 +823,13 @@ read_prdt(struct ahci_port *p, int slot, uint8_t *cfis,
 	len = size;
 	to = buf;
 	prdt = (struct ahci_prdt_entry *)(cfis + 0x80);
-	for (i = 0; i < hdr->prdtl && len; i++) {
+	for (i = 0; i < le16toh(hdr->prdtl) && len; i++) {
 		uint8_t *ptr;
 		uint32_t dbcsz;
 		int sublen;
 
-		dbcsz = (prdt->dbc & DBCMASK) + 1;
-		ptr = paddr_guest2host(ahci_ctx(p->pr_sc), prdt->dba, dbcsz);
+		dbcsz = (le32toh(prdt->dbc) & DBCMASK) + 1;
+		ptr = paddr_guest2host(ahci_ctx(p->pr_sc), le64toh(prdt->dba), dbcsz);
 		sublen = MIN(len, dbcsz);
 		memcpy(to, ptr, sublen);
 		len -= sublen;
@@ -924,13 +937,13 @@ write_prdt(struct ahci_port *p, int slot, uint8_t *cfis,
 	len = size;
 	from = buf;
 	prdt = (struct ahci_prdt_entry *)(cfis + 0x80);
-	for (i = 0; i < hdr->prdtl && len; i++) {
+	for (i = 0; i < le16toh(hdr->prdtl) && len; i++) {
 		uint8_t *ptr;
 		uint32_t dbcsz;
 		int sublen;
 
-		dbcsz = (prdt->dbc & DBCMASK) + 1;
-		ptr = paddr_guest2host(ahci_ctx(p->pr_sc), prdt->dba, dbcsz);
+		dbcsz = (le32toh(prdt->dbc) & DBCMASK) + 1;
+		ptr = paddr_guest2host(ahci_ctx(p->pr_sc), le64toh(prdt->dba), dbcsz);
 		sublen = MIN(len, dbcsz);
 		memcpy(ptr, from, sublen);
 		len -= sublen;
@@ -964,7 +977,7 @@ ahci_handle_read_log(struct ahci_port *p, int slot, uint8_t *cfis)
 	uint16_t *buf16 = (uint16_t *)buf;
 
 	hdr = (struct ahci_cmd_hdr *)(p->cmd_lst + slot * AHCI_CL_SIZE);
-	if (p->atapi || hdr->prdtl == 0 || cfis[5] != 0 ||
+	if (p->atapi || le16toh(hdr->prdtl) == 0 || cfis[5] != 0 ||
 	    cfis[9] != 0 || cfis[12] != 1 || cfis[13] != 0) {
 		ahci_write_fis_d2h(p, slot, cfis,
 		    (ATA_E_ABORT << 8) | ATA_S_READY | ATA_S_ERROR);
@@ -1002,7 +1015,7 @@ handle_identify(struct ahci_port *p, int slot, uint8_t *cfis)
 	struct ahci_cmd_hdr *hdr;
 
 	hdr = (struct ahci_cmd_hdr *)(p->cmd_lst + slot * AHCI_CL_SIZE);
-	if (p->atapi || hdr->prdtl == 0) {
+	if (p->atapi || le16toh(hdr->prdtl) == 0) {
 		ahci_write_fis_d2h(p, slot, cfis,
 		    (ATA_E_ABORT << 8) | ATA_S_READY | ATA_S_ERROR);
 	} else {
@@ -1445,7 +1458,7 @@ atapi_read(struct ahci_port *p, int slot, uint8_t *cfis, uint32_t done)
 	aior->done = done;
 	breq = &aior->io_req;
 	breq->br_offset = lba + done;
-	ahci_build_iov(p, aior, prdt, hdr->prdtl);
+	ahci_build_iov(p, aior, prdt, le16toh(hdr->prdtl));
 
 	/* Mark this command in-flight. */
 	p->pending |= 1 << slot;
@@ -1832,14 +1845,16 @@ ahci_handle_slot(struct ahci_port *p, int slot)
 #endif
 
 	sc = p->pr_sc;
+	printf("%s: cmd_lst %p, slot %d\n", __func__, p->cmd_lst, slot);
 	hdr = (struct ahci_cmd_hdr *)(p->cmd_lst + slot * AHCI_CL_SIZE);
 #ifdef AHCI_DEBUG
-	cfl = (hdr->flags & 0x1f) * 4;
+	cfl = (le16toh(hdr->flags) & 0x1f) * 4;
 #endif
-	cfis = paddr_guest2host(ahci_ctx(sc), hdr->ctba,
-			0x80 + hdr->prdtl * sizeof(struct ahci_prdt_entry));
+	cfis = paddr_guest2host(ahci_ctx(sc), le64toh(hdr->ctba),
+			0x80 + le16toh(hdr->prdtl) * sizeof(struct ahci_prdt_entry));
 #ifdef AHCI_DEBUG
 	prdt = (struct ahci_prdt_entry *)(cfis + 0x80);
+	printf("%s: hdr %p cfis %p, prdr %p\n", __func__, hdr, cfis, prdt);
 
 	DPRINTF("\ncfis:");
 	for (i = 0; i < cfl; i++) {
@@ -1849,8 +1864,8 @@ ahci_handle_slot(struct ahci_port *p, int slot)
 	}
 	DPRINTF("\n");
 
-	for (i = 0; i < hdr->prdtl; i++) {
-		DPRINTF("%d@%08"PRIx64"\n", prdt->dbc & 0x3fffff, prdt->dba);
+	for (i = 0; i < le16toh(hdr->prdtl); i++) {
+		DPRINTF("%d@%08"PRIx64"\n", le32toh(prdt->dbc) & 0x3fffff, le64toh(prdt->dba));
 		prdt++;
 	}
 #endif
@@ -2121,6 +2136,7 @@ pci_ahci_port_write(struct pci_ahci_softc *sc, uint64_t offset, uint64_t value)
 
 			p->cmd |= AHCI_P_CMD_CR;
 			clb = (uint64_t)p->clbu << 32 | p->clb;
+			printf("%s: p->clbu %x, p->clb %x, clb %lx\n", __func__, p->clbu, p->clb, clb);
 			p->cmd_lst = paddr_guest2host(ahci_ctx(sc), clb,
 					AHCI_CL_SIZE * AHCI_MAX_SLOTS);
 		}
@@ -2356,6 +2372,8 @@ pci_ahci_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts, int atapi)
 
 	ret = 0;
 
+	printf("%s\n", __func__);
+
 #ifdef AHCI_DEBUG
 	dbg = fopen("/tmp/log", "w+");
 #endif
@@ -2469,6 +2487,8 @@ open_fail:
 		}
 		free(sc);
 	}
+
+	printf("%s: done\n", __func__);
 
 	return (ret);
 }
