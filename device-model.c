@@ -199,5 +199,7 @@ dm_loop(struct epw_softc *sc)
 		e82545_rx_poll(NULL);
 		intr_restore(intr);
 #endif
+
+		blockif_thr();
 	}
 }
