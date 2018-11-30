@@ -1047,13 +1047,8 @@ handle_identify(struct ahci_port *p, int slot, uint8_t *cfis)
 		if (p->mult_sectors)
 			buf[59] = bswap16((0x100 | p->mult_sectors));
 		if (sectors <= 0x0fffffff) {
-#if 0
-			buf[60] = sectors;
-			buf[61] = (sectors >> 16);
-#else
 			buf[60] = bswap16(sectors);
 			buf[61] = bswap16(sectors >> 16);
-#endif
 		} else {
 			buf[60] = bswap16(0xffff);
 			buf[61] = bswap16(0x0fff);
