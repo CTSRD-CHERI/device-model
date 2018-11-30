@@ -1549,6 +1549,8 @@ pci_lintr_route(struct pci_devinst *pi)
 	struct businfo *bi;
 	struct intxinfo *ii;
 
+	printf("%s: pi->pi_lintr.pin %d\n", __func__, pi->pi_lintr.pin);
+
 	if (pi->pi_lintr.pin == 0)
 		return;
 
@@ -2187,6 +2189,7 @@ bhyve_pci_init(struct vmctx *ctx)
 	struct businfo *bi;
 	struct slotinfo *si;
 	char *name;
+	char *optstr;
 
 	bnum = 0;
 	snum = 0;
@@ -2210,7 +2213,10 @@ bhyve_pci_init(struct vmctx *ctx)
 	name = malloc(16);
 	sprintf(name, "ahci-hd");
 	si->si_funcs[fnum].fi_name = name;
-	si->si_funcs[fnum].fi_param = NULL;
+
+	optstr = malloc(16);
+	sprintf(optstr, "hd:test");
+	si->si_funcs[fnum].fi_param = optstr;
 
 	init_pci(ctx);
 
