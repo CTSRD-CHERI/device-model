@@ -152,7 +152,7 @@ dm_init(struct epw_softc *sc)
 	msgdma1_sc.unit = 1;
 	msgdma1_sc.fifo_sc = &fifo1_sc;
 
-	malloc_base = 0xffffffffb0000000 + 0x01000000/2;
+	malloc_base = 0xffffffffa0000000 + 0x10000000 + 0x01000000/2;
 	malloc_size = 0x01000000/2;
 
 	fl_init();   

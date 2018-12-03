@@ -121,6 +121,7 @@ struct blockif_ctxt {
 	int			bc_isgeom;
 	int			bc_candelete;
 	int			bc_rdonly;
+	off_t			bc_base;
 	off_t			bc_size;
 	int			bc_sectsz;
 	int			bc_psectsz;
@@ -254,6 +255,9 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 	off_t arg[2];
 	ssize_t clen, len, off, boff, voff;
 	int i, err;
+	uint8_t *t;
+	uint8_t *addr;
+	int j;
 
 	printf("%s: operation %d\n", __func__, be->be_op);
 
@@ -272,15 +276,16 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 				err = errno;
 			} else
 #else
+			addr = (uint8_t *)(bc->bc_base + br->br_offset);
+
 			for (i = 0; i < br->br_iovcnt; i++) {
-				printf("%s: iov %d base %lx len %d, br->br_offset %d\n",
+				printf("%s: read iov %d base %lx len %d, br->br_offset %d\n",
 				    __func__, i, br->br_iov->iov_base,
 				    br->br_iov->iov_len, br->br_offset);
-				uint8_t *t;
-				int j;
-				t = br->br_iov->iov_base;
-				for (j = 0; j < br->br_iov->iov_len; j++)
-					t[j] = 0xff;
+
+				t = br->br_iov[i].iov_base;
+				for (j = 0; j < br->br_iov[i].iov_len; j++)
+					t[j] = *addr++;
 			}
 			len = 0;
 #endif
@@ -335,11 +340,27 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 				err = errno;
 			} else
 #else
+			printf("%s: write, buf == NULL\n", __func__);
+
+			addr = (uint8_t *)(bc->bc_base + br->br_offset);
+
+			for (i = 0; i < br->br_iovcnt; i++) {
+				printf("%s: write iov %d base %lx len %d, br->br_offset %d\n",
+				    __func__, i, br->br_iov->iov_base,
+				    br->br_iov->iov_len, br->br_offset);
+
+				t = br->br_iov[i].iov_base;
+				for (j = 0; j < br->br_iov[i].iov_len; j++)
+					*addr++ = t[j];
+			}
+
 			len = 0;
 #endif
 				br->br_resid -= len;
+				br->br_resid = 0;
 			break;
 		}
+		printf("%s: write, buf != NULL\n", __func__);
 		i = 0;
 		off = voff = 0;
 		while (br->br_resid > 0) {
@@ -537,7 +558,7 @@ blockif_open(const char *optstr, const char *ident)
 	struct stat sbuf;
 	struct diocgattr_arg arg;
 #endif
-	off_t size, psectsz, psectoff;
+	off_t psectsz, psectoff;
 	int extra, fd, i, sectsz;
 #if 0
 	int nocache, sync, ro, candelete, geom, ssopt, pssopt;
@@ -689,8 +710,7 @@ blockif_open(const char *optstr, const char *ident)
 	psectsz = 512;
 	psectoff = 0;
 	sectsz = 512;
-	size = 1048576;
-	ro = 1;
+	ro = 0;
 	candelete = 0;
 	geom = 0;
 #endif
@@ -712,7 +732,8 @@ blockif_open(const char *optstr, const char *ident)
 	bc->bc_isgeom = geom;
 	bc->bc_candelete = candelete;
 	bc->bc_rdonly = ro;
-	bc->bc_size = size;
+	bc->bc_base = 0xffffffffb1000000;
+	bc->bc_size = 0xf000000;
 	bc->bc_sectsz = sectsz;
 	bc->bc_psectsz = psectsz;
 	bc->bc_psectoff = psectoff;
