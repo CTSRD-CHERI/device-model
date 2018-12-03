@@ -79,6 +79,15 @@ __FBSDID("$FreeBSD$");
 #define BLOCKIF_NUMTHR	8
 #define BLOCKIF_MAXREQ	(64 + BLOCKIF_NUMTHR)
 
+#define	BLOCKIF_DEBUG
+#undef	BLOCKIF_DEBUG
+
+#ifdef	BLOCKIF_DEBUG
+#define	dprintf(fmt, ...)	printf(fmt, ##__VA_ARGS__)
+#else
+#define	dprintf(fmt, ...)
+#endif
+
 struct blockif_softc {
 	struct blockif_ctxt *bc;
 	uint8_t *buf;
@@ -163,7 +172,7 @@ blockif_enqueue(struct blockif_ctxt *bc, struct blockif_req *breq,
 	off_t off;
 	int i;
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	be = TAILQ_FIRST(&bc->bc_freeq);
 	assert(be != NULL);
@@ -210,8 +219,6 @@ blockif_dequeue(struct blockif_ctxt *bc, int t, struct blockif_elem **bep)
 {
 	struct blockif_elem *be;
 
-	//printf("%s\n", __func__);
-
 	TAILQ_FOREACH(be, &bc->bc_pendq, be_link) {
 		if (be->be_status == BST_PEND)
 			break;
@@ -232,7 +239,7 @@ blockif_complete(struct blockif_ctxt *bc, struct blockif_elem *be)
 {
 	struct blockif_elem *tbe;
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	if (be->be_status == BST_DONE || be->be_status == BST_BUSY)
 		TAILQ_REMOVE(&bc->bc_busyq, be, be_link);
@@ -257,7 +264,7 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 	uint8_t *addr;
 	int j;
 
-	printf("%s: operation %d\n", __func__, be->be_op);
+	dprintf("%s: operation %d\n", __func__, be->be_op);
 
 	br = be->be_req;
 	if (br->br_iovcnt <= 1)
@@ -265,13 +272,10 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 	err = 0;
 	switch (be->be_op) {
 	case BOP_READ:
-		printf("%s: BOP_READ (buf == NULL), iovcnt %d\n",
-		    __func__, br->br_iovcnt);
-
 		addr = (uint8_t *)(bc->bc_base + br->br_offset);
 
 		for (i = 0; i < br->br_iovcnt; i++) {
-			printf("%s: read iov %d base %lx len %d, br->br_offset %d\n",
+			dprintf("%s: read iov %d base %lx len %d, br->br_offset %d\n",
 			    __func__, i, br->br_iov->iov_base,
 			    br->br_iov->iov_len, br->br_offset);
 
@@ -286,12 +290,11 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 			err = EROFS;
 			break;
 		}
-		printf("%s: write, buf == NULL\n", __func__);
 
 		addr = (uint8_t *)(bc->bc_base + br->br_offset);
 
 		for (i = 0; i < br->br_iovcnt; i++) {
-			printf("%s: write iov %d base %lx len %d, br->br_offset %d\n",
+			dprintf("%s: write iov %d base %lx len %d, br->br_offset %d\n",
 			    __func__, i, br->br_iov->iov_base,
 			    br->br_iov->iov_len, br->br_offset);
 
@@ -362,8 +365,6 @@ blockif_thr(void)
 	struct blockif_ctxt *bc;
 	struct blockif_elem *be;
 	uint8_t *buf;
-
-	//printf("%s\n", __func__);
 
 	sc = blockif_sc;
 	if (sc == NULL)
@@ -659,7 +660,7 @@ blockif_request(struct blockif_ctxt *bc, struct blockif_req *breq,
 {
 	int err;
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	err = 0;
 
@@ -697,7 +698,7 @@ int
 blockif_read(struct blockif_ctxt *bc, struct blockif_req *breq)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 	return (blockif_request(bc, breq, BOP_READ));
@@ -707,7 +708,7 @@ int
 blockif_write(struct blockif_ctxt *bc, struct blockif_req *breq)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 	return (blockif_request(bc, breq, BOP_WRITE));
@@ -717,7 +718,7 @@ int
 blockif_flush(struct blockif_ctxt *bc, struct blockif_req *breq)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 	return (blockif_request(bc, breq, BOP_FLUSH));
@@ -727,7 +728,7 @@ int
 blockif_delete(struct blockif_ctxt *bc, struct blockif_req *breq)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 	return (blockif_request(bc, breq, BOP_DELETE));
@@ -738,7 +739,7 @@ blockif_cancel(struct blockif_ctxt *bc, struct blockif_req *breq)
 {
 	struct blockif_elem *be;
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 
@@ -874,7 +875,7 @@ blockif_chs(struct blockif_ctxt *bc, uint16_t *c, uint8_t *h, uint8_t *s)
 	uint16_t secpt;		/* sectors per track */
 	uint8_t heads;
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 
@@ -920,7 +921,7 @@ off_t
 blockif_size(struct blockif_ctxt *bc)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 	return (bc->bc_size);
@@ -930,7 +931,7 @@ int
 blockif_sectsz(struct blockif_ctxt *bc)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 	return (bc->bc_sectsz);
@@ -940,7 +941,7 @@ void
 blockif_psectsz(struct blockif_ctxt *bc, int *size, int *off)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 	*size = bc->bc_psectsz;
@@ -951,7 +952,7 @@ int
 blockif_queuesz(struct blockif_ctxt *bc)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 	return (BLOCKIF_MAXREQ - 1);
@@ -961,7 +962,7 @@ int
 blockif_is_ro(struct blockif_ctxt *bc)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 	return (bc->bc_rdonly);
@@ -971,7 +972,7 @@ int
 blockif_candelete(struct blockif_ctxt *bc)
 {
 
-	printf("%s\n", __func__);
+	dprintf("%s\n", __func__);
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 	return (bc->bc_candelete);

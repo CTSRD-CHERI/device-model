@@ -123,7 +123,6 @@ enum sata_fis_type {
 #define	ATA_SATA_SF_AN			0x05
 #define	ATA_SF_DIS_SATA_SF		0x90
 
-#define	AHCI_DEBUG	1
 /*
  * Debug printf
  */
@@ -1845,7 +1844,7 @@ ahci_handle_slot(struct ahci_port *p, int slot)
 #endif
 
 	sc = p->pr_sc;
-	printf("%s: cmd_lst %p, slot %d\n", __func__, p->cmd_lst, slot);
+	DPRINTF("%s: cmd_lst %p, slot %d\n", __func__, p->cmd_lst, slot);
 	hdr = (struct ahci_cmd_hdr *)(p->cmd_lst + slot * AHCI_CL_SIZE);
 #ifdef AHCI_DEBUG
 	cfl = (le16toh(hdr->flags) & 0x1f) * 4;
@@ -1946,7 +1945,7 @@ ata_ioreq_cb(struct blockif_req *br, int err)
 	     (cfis[13] & 0x1f) == ATA_SFPDMA_DSM))
 		dsm = 1;
 
-	printf("%s: cfis[2] %d ncq %d dsm %d\n", __func__, cfis[2], ncq, dsm);
+	DPRINTF("%s: cfis[2] %d ncq %d dsm %d\n", __func__, cfis[2], ncq, dsm);
 
 #if 0
 	pthread_mutex_lock(&sc->mtx);
