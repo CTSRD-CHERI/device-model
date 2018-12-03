@@ -252,8 +252,6 @@ static void
 blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 {
 	struct blockif_req *br;
-	off_t arg[2];
-	ssize_t clen, len, off, boff, voff;
 	int i, err;
 	uint8_t *t;
 	uint8_t *addr;
@@ -267,160 +265,46 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 	err = 0;
 	switch (be->be_op) {
 	case BOP_READ:
-		if (buf == NULL) {
-			printf("%s: BOP_READ (buf == NULL), iovcnt %d\n",
-			    __func__, br->br_iovcnt);
-#if 0
-			if ((len = preadv(bc->bc_fd, br->br_iov, br->br_iovcnt,
-				   br->br_offset)) < 0) {
-				err = errno;
-			} else
-#else
-			addr = (uint8_t *)(bc->bc_base + br->br_offset);
+		printf("%s: BOP_READ (buf == NULL), iovcnt %d\n",
+		    __func__, br->br_iovcnt);
 
-			for (i = 0; i < br->br_iovcnt; i++) {
-				printf("%s: read iov %d base %lx len %d, br->br_offset %d\n",
-				    __func__, i, br->br_iov->iov_base,
-				    br->br_iov->iov_len, br->br_offset);
+		addr = (uint8_t *)(bc->bc_base + br->br_offset);
 
-				t = br->br_iov[i].iov_base;
-				for (j = 0; j < br->br_iov[i].iov_len; j++)
-					t[j] = *addr++;
-			}
-			len = 0;
-#endif
-				br->br_resid -= len;
-				br->br_resid = 0;
-			break;
+		for (i = 0; i < br->br_iovcnt; i++) {
+			printf("%s: read iov %d base %lx len %d, br->br_offset %d\n",
+			    __func__, i, br->br_iov->iov_base,
+			    br->br_iov->iov_len, br->br_offset);
+
+			t = br->br_iov[i].iov_base;
+			for (j = 0; j < br->br_iov[i].iov_len; j++)
+				t[j] = *addr++;
 		}
-		printf("%s: BOP_READ (buf != NULL)\n", __func__);
-		i = 0;
-		off = voff = 0;
-		while (br->br_resid > 0) {
-			len = MIN(br->br_resid, MAXPHYS);
-#if 0
-			if (pread(bc->bc_fd, buf, len, br->br_offset +
-			    off) < 0) {
-				err = errno;
-				break;
-			}
-#endif
-			boff = 0;
-			do {
-				clen = MIN(len - boff, br->br_iov[i].iov_len -
-				    voff);
-#if 0
-				memcpy(br->br_iov[i].iov_base + voff,
-				    buf + boff, clen);
-#else
-				memcpy((void *)((uint64_t)br->br_iov[i].iov_base + voff),
-				    buf + boff, clen);
-#endif
-				if (clen < br->br_iov[i].iov_len - voff)
-					voff += clen;
-				else {
-					i++;
-					voff = 0;
-				}
-				boff += clen;
-			} while (boff < len);
-			off += len;
-			br->br_resid -= len;
-		}
+		br->br_resid = 0;
 		break;
 	case BOP_WRITE:
 		if (bc->bc_rdonly) {
 			err = EROFS;
 			break;
 		}
-		if (buf == NULL) {
-#if 0
-			if ((len = pwritev(bc->bc_fd, br->br_iov, br->br_iovcnt,
-				    br->br_offset)) < 0) {
-				err = errno;
-			} else
-#else
-			printf("%s: write, buf == NULL\n", __func__);
+		printf("%s: write, buf == NULL\n", __func__);
 
-			addr = (uint8_t *)(bc->bc_base + br->br_offset);
+		addr = (uint8_t *)(bc->bc_base + br->br_offset);
 
-			for (i = 0; i < br->br_iovcnt; i++) {
-				printf("%s: write iov %d base %lx len %d, br->br_offset %d\n",
-				    __func__, i, br->br_iov->iov_base,
-				    br->br_iov->iov_len, br->br_offset);
+		for (i = 0; i < br->br_iovcnt; i++) {
+			printf("%s: write iov %d base %lx len %d, br->br_offset %d\n",
+			    __func__, i, br->br_iov->iov_base,
+			    br->br_iov->iov_len, br->br_offset);
 
-				t = br->br_iov[i].iov_base;
-				for (j = 0; j < br->br_iov[i].iov_len; j++)
-					*addr++ = t[j];
-			}
-
-			len = 0;
-#endif
-				br->br_resid -= len;
-				br->br_resid = 0;
-			break;
+			t = br->br_iov[i].iov_base;
+			for (j = 0; j < br->br_iov[i].iov_len; j++)
+				*addr++ = t[j];
 		}
-		printf("%s: write, buf != NULL\n", __func__);
-		i = 0;
-		off = voff = 0;
-		while (br->br_resid > 0) {
-			len = MIN(br->br_resid, MAXPHYS);
-			boff = 0;
-			do {
-				clen = MIN(len - boff, br->br_iov[i].iov_len -
-				    voff);
-#if 0
-				memcpy(buf + boff,
-				    br->br_iov[i].iov_base + voff, clen);
-#else
-				memcpy(buf + boff,
-				    (void *)((uint64_t)br->br_iov[i].iov_base + voff), clen);
-#endif
-				if (clen < br->br_iov[i].iov_len - voff)
-					voff += clen;
-				else {
-					i++;
-					voff = 0;
-				}
-				boff += clen;
-			} while (boff < len);
-#if 0
-			if (pwrite(bc->bc_fd, buf, len, br->br_offset +
-			    off) < 0) {
-				err = errno;
-				break;
-			}
-#endif
-			off += len;
-			br->br_resid -= len;
-		}
+		br->br_resid = 0;
 		break;
 	case BOP_FLUSH:
-#if 0
-		if (bc->bc_ischr) {
-			if (ioctl(bc->bc_fd, DIOCGFLUSH))
-				err = errno;
-		} else if (fsync(bc->bc_fd)) {
-			err = errno;
-		}
-#endif
 		break;
 	case BOP_DELETE:
-		if (!bc->bc_candelete)
-			err = EOPNOTSUPP;
-		else if (bc->bc_rdonly)
-			err = EROFS;
-		else if (bc->bc_ischr) {
-			arg[0] = br->br_offset;
-			arg[1] = br->br_resid;
-#if 0
-			if (ioctl(bc->bc_fd, DIOCGDELETE, arg))
-				err = errno;
-			else
-#endif
-				br->br_resid = 0;
-		} else
-			err = EOPNOTSUPP;
+		err = EOPNOTSUPP;
 		break;
 	default:
 		err = EINVAL;
