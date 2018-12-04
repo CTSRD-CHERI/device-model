@@ -83,38 +83,6 @@ pci_irq_deassert(struct pci_devinst *pi)
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
 }
 
-#if 0
-int
-register_mem(struct mem_range *memp)
-{
-
-	dprintf("%s: name %s base %lx size %lx\n",
-	    __func__, memp->name, memp->base, memp->size);
-
-	return (0);
-}
-
-int 
-unregister_mem(struct mem_range *memp)
-{
-
-	dprintf("%s: name %s base %lx size %lx\n",
-	    __func__, memp->name, memp->base, memp->size);
-
-	return (0);
-}
-
-int
-register_mem_fallback(struct mem_range *memp)
-{
-
-	dprintf("%s: name %s base %lx size %lx\n",
-	    __func__, memp->name, memp->base, memp->size);
-
-	return (0);
-}
-#endif
-
 int
 register_inout(struct inout_port *iop)
 {
