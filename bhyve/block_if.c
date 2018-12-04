@@ -260,9 +260,7 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 {
 	struct blockif_req *br;
 	int i, err;
-	uint8_t *t;
 	uint8_t *addr;
-	int j;
 
 	dprintf("%s: operation %d\n", __func__, be->be_op);
 
@@ -279,9 +277,8 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 			    __func__, i, br->br_iov->iov_base,
 			    br->br_iov->iov_len, br->br_offset);
 
-			t = br->br_iov[i].iov_base;
-			for (j = 0; j < br->br_iov[i].iov_len; j++)
-				t[j] = *addr++;
+			memcpy(br->br_iov[i].iov_base, addr, br->br_iov[i].iov_len);
+			addr += br->br_iov[i].iov_len;
 		}
 		br->br_resid = 0;
 		break;
@@ -298,9 +295,8 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 			    __func__, i, br->br_iov->iov_base,
 			    br->br_iov->iov_len, br->br_offset);
 
-			t = br->br_iov[i].iov_base;
-			for (j = 0; j < br->br_iov[i].iov_len; j++)
-				*addr++ = t[j];
+			memcpy(addr, br->br_iov[i].iov_base, br->br_iov[i].iov_len);
+			addr += br->br_iov[i].iov_len;
 		}
 		br->br_resid = 0;
 		break;
