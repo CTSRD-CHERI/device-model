@@ -69,7 +69,10 @@ pci_irq_assert(struct pci_devinst *pi)
 
 	addr = BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE;
 
-	*(volatile uint64_t *)(addr) = (1 << DM_E1000_INTR);
+	if (strcmp(pi->pi_name, "ahci-hd-pci-1") == 0)
+		*(volatile uint64_t *)(addr) = (1 << DM_AHCI_INTR);
+	else if (strcmp(pi->pi_name, "e1000-pci-0") == 0)
+		*(volatile uint64_t *)(addr) = (1 << DM_E1000_INTR);
 }
 
 void
@@ -154,7 +157,7 @@ pirq_irq(int pin)
 
 	dprintf("%s: pin %d\n", __func__, pin);
 
-	return (0);
+	return (pin);
 }
 
 void
