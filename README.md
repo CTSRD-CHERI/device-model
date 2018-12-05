@@ -56,4 +56,31 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
 
     $ ifconfig atse1 10.4.0.2/24
 
+### Example device-tree node for PCI-e device
+```
+	pcie@7fb10000 {
+		compatible = "pci-host-ecam-generic";
+		device_type = "pci";
+		#interrupt-cells = <1>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+
+		reg = <0x7fb10000 0xe0000>;
+		reg-names = "PCI ECAM";
+
+		//attributes      pci_addr   cpu_addr         size
+		ranges =
+		  <0x02000000 0 0x40000000 0x7fb20000 0 0x00020000	//e1000 bar 0
+		   0x01000000 0 0x00000000 0x00000010 0 0x00010000	//e1000 bar 2
+		   0x43000000 0 0x60000000 0x7fb40000 0 0x00010000	//e1000 bar 1
+		   0x02000000 0 0x80000000 0x7fb50000 0 0x00010000>;	//ahci-hd bar 0
+
+		// PCI_DEVICE(3)  INT#(1)  CONTROLLER(PHANDLE)  CONTROLLER_DATA(1)
+
+		interrupt-map = < 0x000 0 0  1  &beripic0  0x13 	//e1000
+				  0x800 0 0  1  &beripic0  0x14 >; 	//ahci
+		interrupt-map-mask = <0x800 0 0 7>;
+	};
+```
+
 ![alt text](https://raw.githubusercontent.com/CTSRD-CHERI/device-model/master/images/de4.jpg)
