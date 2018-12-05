@@ -83,12 +83,14 @@ pcie@7fb10000 {
 };
 ```
 
-### Memory organization
+### Physical memory organization
 
-BERI CPU has 1G of physical memory at 0x00000000 -- 0x40000000.
-FreeBSD reserves 0x10000000 -- 0x20000000 (256mb) for Device-model.
-Device-model static data resides in 0x10000000 -- 0x10800000 (8mb).
-Device-model reserves 0x10800000 -- 0x11000000 for malloc().
-0x11000000 -- 0xf000000 (~240MB) is used for AHCI SATA device.
+| Start      | End        | Description                          |
+| ---------- | ---------- | ------------------------------------ |
+| 0x00000000 | 0x40000000 | Entire physical memory of SoC        |
+| 0x10000000 | 0x20000000 | Reserved by FreeBSD for device-model |
+| 0x10000000 | 0x10800000 | device-model static data             |
+| 0x10800000 | 0x11000000 | device-model malloc()                |
+| 0x11000000 | 0x20000000 | AHCI SATA device memory backend      |
 
 ![alt text](https://raw.githubusercontent.com/CTSRD-CHERI/device-model/master/images/de4.jpg)
