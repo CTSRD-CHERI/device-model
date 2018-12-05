@@ -58,29 +58,37 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
 
 ### Example device-tree node for PCI-e device
 ```
-	pcie@7fb10000 {
-		compatible = "pci-host-ecam-generic";
-		device_type = "pci";
-		#interrupt-cells = <1>;
-		#address-cells = <3>;
-		#size-cells = <2>;
+pcie@7fb10000 {
+	compatible = "pci-host-ecam-generic";
+	device_type = "pci";
+	#interrupt-cells = <1>;
+	#address-cells = <3>;
+	#size-cells = <2>;
 
-		reg = <0x7fb10000 0xe0000>;
-		reg-names = "PCI ECAM";
+	reg = <0x7fb10000 0xe0000>;
+	reg-names = "PCI ECAM";
 
-		//attributes      pci_addr   cpu_addr         size
-		ranges =
-		  <0x02000000 0 0x40000000 0x7fb20000 0 0x00020000	//e1000 bar 0
-		   0x01000000 0 0x00000000 0x00000010 0 0x00010000	//e1000 bar 2
-		   0x43000000 0 0x60000000 0x7fb40000 0 0x00010000	//e1000 bar 1
-		   0x02000000 0 0x80000000 0x7fb50000 0 0x00010000>;	//ahci-hd bar 0
+	//attributes      pci_addr   cpu_addr         size
+	ranges =
+	  <0x02000000 0 0x40000000 0x7fb20000 0 0x00020000	//e1000 bar 0
+	   0x01000000 0 0x00000000 0x00000010 0 0x00010000	//e1000 bar 2
+	   0x43000000 0 0x60000000 0x7fb40000 0 0x00010000	//e1000 bar 1
+	   0x02000000 0 0x80000000 0x7fb50000 0 0x00010000>;	//ahci-hd bar 0
 
-		// PCI_DEVICE(3)  INT#(1)  CONTROLLER(PHANDLE)  CONTROLLER_DATA(1)
+	// PCI_DEVICE(3)  INT#(1)  CONTROLLER(PHANDLE)  CONTROLLER_DATA(1)
 
-		interrupt-map = < 0x000 0 0  1  &beripic0  0x13 	//e1000
-				  0x800 0 0  1  &beripic0  0x14 >; 	//ahci
-		interrupt-map-mask = <0x800 0 0 7>;
-	};
+	interrupt-map = < 0x000 0 0  1  &beripic0  0x13 	//e1000
+			  0x800 0 0  1  &beripic0  0x14 >; 	//ahci
+	interrupt-map-mask = <0x800 0 0 7>;
+};
 ```
+
+### Memory organization
+
+BERI CPU has 1G of physical memory at 0x00000000 -- 0x40000000.
+FreeBSD reserves 0x10000000 -- 0x20000000 (256mb) for Device-model.
+Device-model static data resides in 0x10000000 -- 0x10800000 (8mb).
+Device-model reserves 0x10800000 -- 0x11000000 for malloc().
+0x11000000 -- 0xf000000 (~240MB) is used for AHCI SATA device.
 
 ![alt text](https://raw.githubusercontent.com/CTSRD-CHERI/device-model/master/images/de4.jpg)
