@@ -8,12 +8,12 @@ OBJCOPY =	llvm-objcopy-cheri
 LDSCRIPT =	${.CURDIR}/ldscript
 
 OBJECTS =	alloc.o						\
-		bhyve/mem.o					\
+		bhyve/bhyve_support.o				\
 		bhyve/block_if.o				\
-		bhyve/pci_emul.o				\
+		bhyve/mem.o					\
 		bhyve/pci_ahci.o				\
+		bhyve/pci_emul.o				\
 		bhyve/pci_e82545.o				\
-		bhyve_support.o					\
 		device-model.o					\
 		emul_msgdma.o					\
 		emul_pci.o					\
@@ -23,17 +23,17 @@ OBJECTS =	alloc.o						\
 		osfive/lib/md5/md5.o				\
 		osfive/sys/dev/altera/fifo/fifo.o		\
 		osfive/sys/dev/altera/jtag_uart/jtag_uart.o	\
-		osfive/sys/mips/beri/beripic.o			\
-		osfive/sys/mips/beri/beri_epw.o			\
-		osfive/sys/mips/mips/machdep.o			\
-		osfive/sys/mips/mips/cache_mipsNN.o		\
-		osfive/sys/mips/mips/timer.o			\
-		osfive/sys/mips/mips/trap.o			\
-		osfive/sys/mips/mips/exception.o		\
 		osfive/sys/kern/kern_malloc_fl.o		\
 		osfive/sys/kern/kern_panic.o			\
-		osfive/sys/kern/subr_prf.o			\
 		osfive/sys/kern/subr_console.o			\
+		osfive/sys/kern/subr_prf.o			\
+		osfive/sys/mips/beri/beripic.o			\
+		osfive/sys/mips/beri/beri_epw.o			\
+		osfive/sys/mips/mips/cache_mipsNN.o		\
+		osfive/sys/mips/mips/exception.o		\
+		osfive/sys/mips/mips/machdep.o			\
+		osfive/sys/mips/mips/timer.o			\
+		osfive/sys/mips/mips/trap.o			\
 		start.o
 
 .include "${.CURDIR}/osfive/lib/libc/Makefile.inc"

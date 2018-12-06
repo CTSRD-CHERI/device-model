@@ -46,7 +46,7 @@
 #include "emul.h"
 #include "emul_msgdma.h"
 #include "emul_pci.h"
-#include "bhyve_support.h"
+#include "bhyve/bhyve_support.h"
 #include "bhyve/pci_e82545.h"
 
 #define	DM_FWD_NDEVICES		4

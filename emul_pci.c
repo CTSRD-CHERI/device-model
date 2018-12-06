@@ -46,10 +46,11 @@
 
 #include "device-model.h"
 #include "emul.h"
+#include "emul_pci.h"
+
 #include "bhyve/mem.h"
 #include "bhyve/pci_e82545.h"
-#include "emul_pci.h"
-#include "bhyve_support.h"
+#include "bhyve/bhyve_support.h"
 
 #define	EMUL_PCI_DEBUG
 #undef	EMUL_PCI_DEBUG
