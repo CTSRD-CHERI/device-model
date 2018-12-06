@@ -43,12 +43,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <machine/atomic.h>
 
 #define	MIN(a,b)	(((a)<(b))?(a):(b))
 
-#include <limits.h>
 #include "ahci.h"
 #include "bhyve_support.h"
 #include "mevent.h"
