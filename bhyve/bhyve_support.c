@@ -39,16 +39,14 @@
 
 #include <machine/cpuregs.h>
 
-#include "bhyve/mem.h"
-#include "bhyve/inout.h"
-#include "bhyve/pci_emul.h"
-#include "bhyve/pci_irq.h"
-#include "bhyve/pci_lpc.h"
+#include "mem.h"
+#include "inout.h"
+#include "pci_emul.h"
+#include "pci_irq.h"
+#include "pci_lpc.h"
 #include "bhyve_support.h"
 
 #include "device-model.h"
-#include "emul.h"
-#include "emul_msgdma.h"
 
 #define	BS_DEBUG
 #undef	BS_DEBUG
@@ -106,17 +104,19 @@ unregister_inout(struct inout_port *iop)
 int
 pirq_alloc_pin(struct pci_devinst *pi)
 {
+	int pin;
 
 	dprintf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
 
-	if (strcmp(pi->pi_name, "e1000-pci-0") == 0)
-		return (1);
+	/*
+	 * e1000-pci-0
+	 * ahci-hd-pci-1
+	 */
 
-	if (strcmp(pi->pi_name, "ahci-hd-pci-1") == 0)
-		return (2);
+	pin = 1;
 
-	return (0);
+	return (pin);
 }
 
 int
@@ -125,7 +125,7 @@ pirq_irq(int pin)
 
 	dprintf("%s: pin %d\n", __func__, pin);
 
-	return (pin);
+	return (0);
 }
 
 void
