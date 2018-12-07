@@ -47,23 +47,17 @@ struct mem_range {
 	uint64_t  	base;
 	uint64_t  	size;
 };
+
 #define	MEM_F_READ		0x1
 #define	MEM_F_WRITE		0x2
 #define	MEM_F_RW		0x3
 #define	MEM_F_IMMUTABLE		0x4	/* mem_range cannot be unregistered */
 
 void	init_mem(void);
-#if 0
-int     emulate_mem(struct vmctx *, int vcpu, uint64_t paddr, struct vie *vie,
-		    struct vm_guest_paging *paging);
-#else
-int     emulate_mem(struct vmctx *ctx, int vcpu, uint64_t paddr,
-    int write, int access_width, uint64_t *val);
-
-#endif
-
+int	emulate_mem(struct vmctx *ctx, int vcpu, uint64_t paddr,
+	    int write, int access_width, uint64_t *val);
 int	read_mem(struct vmctx *ctx, int vcpu, uint64_t gpa, uint64_t *rval,
-		 int size);
+	    int size);
 int	register_mem(struct mem_range *memp);
 int	register_mem_fallback(struct mem_range *memp);
 int	unregister_mem(struct mem_range *memp);
