@@ -85,12 +85,12 @@ pcie@7fb10000 {
 
 ### Physical memory organization
 
-| Start      | End        | Description                          |
-| ---------- | ---------- | ------------------------------------ |
-| 0x00000000 | 0x40000000 | Entire physical memory of SoC        |
-| 0x10000000 | 0x20000000 | Reserved by FreeBSD for device-model |
-| 0x10000000 | 0x10800000 | device-model static data             |
-| 0x10800000 | 0x11000000 | device-model malloc()                |
-| 0x11000000 | 0x20000000 | AHCI SATA device memory backend      |
+| Start      | End        | Size   | Description                          |
+| ---------- | ---------- | ------ | ------------------------------------ |
+| 0x00000000 | 0x40000000 |   1 GB | Entire physical memory of SoC        |
+| 0x10000000 | 0x20000000 | 256 MB | Reserved by FreeBSD for device-model |
+| 0x10000000 | 0x10800000 |   8 MB | device-model static data             |
+| 0x10800000 | 0x11000000 |   8 MB | device-model malloc()                |
+| 0x11000000 | 0x20000000 | 240 MB | AHCI SATA device memory block        |
 
 ![alt text](https://raw.githubusercontent.com/CTSRD-CHERI/device-model/master/images/de4.jpg)
