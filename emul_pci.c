@@ -61,30 +61,15 @@
 #define	dprintf(fmt, ...)
 #endif
 
-void
-emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
-    struct epw_request *req)
+static int
+emul_mem(struct pci_softc *sc, struct epw_request *req,
+    uint64_t offset)
 {
-	struct pci_softc *sc;
-	uint64_t offset;
 	uint64_t val;
-	int bytes;
 	int error;
-	int i;
+	int bytes;
 	uint8_t val8[8];
-	uint32_t len;
-	int bus, slot, func, coff;
-
-	sc = elink->arg;
-
-	KASSERT(elink->type == PCI_GENERIC, ("Unknown device"));
-
-	offset = req->addr - elink->base_emul - EPW_WINDOW;
-
-	coff = offset & 0xfff;
-	func = (offset >> 12) & 0x7;
-	slot = (offset >> 15) & 0x1f;
-	bus = (offset >> 20) & 0xff;
+	int i;
 
 	if (req->is_write) {
 		KASSERT(req->data_len < 8,
@@ -121,16 +106,43 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 				    val8[7 - i];
 	}
 
+	return (error);
+}
+
+void
+emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
+    struct epw_request *req)
+{
+	struct pci_softc *sc;
+	uint64_t offset;
+	int bytes;
+	int error;
+	uint8_t val8[8];
+	uint32_t len;
+	int bus, slot, func, coff;
+
+	sc = elink->arg;
+
+	KASSERT(elink->type == PCI_GENERIC, ("Unknown device"));
+
+	offset = req->addr - elink->base_emul - EPW_WINDOW;
+
+	error = emul_mem(sc, req, offset);
 	if (error == 0) {
 		dprintf("%s: dev req (is_write %d) paddr %lx, val %lx\n",
 		    __func__, req->is_write, req->addr, val);
 		return;
 	}
 
+	coff = offset & 0xfff;
+	func = (offset >> 12) & 0x7;
+	slot = (offset >> 15) & 0x1f;
+	bus = (offset >> 20) & 0xff;
+
 	if (req->is_write) {
 		bytes = req->data_len;
-		printf("%s (%d/%d/%d): %d-bytes write to %lx, val %lx\n",
-		    __func__, bus, slot, func, bytes, offset, val);
+		printf("%s (%d/%d/%d): %d-bytes write to %lx\n",
+		    __func__, bus, slot, func, bytes, offset);
 		bcopy((void *)&req->data[0], &val8[4 - bytes], bytes);
 		bhyve_pci_cfgrw(sc->ctx, 0, bus, slot, func, coff,
 		    bytes, (uint32_t *)&val8[0]);
@@ -161,11 +173,13 @@ emul_pci_init(struct pci_softc *sc)
 
 	bhyve_pci_init(sc->ctx);
 
-	/* Test request */
-	bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, 0x00, 2, (uint32_t *)&val);
+	/* Test requests */
+	bhyve_pci_cfgrw(sc->ctx, 1, 0, 0, 0, 0x00, 2,
+	    (uint32_t *)&val);
 	printf("slot 0 val 0x%x\n", val);
 
-	bhyve_pci_cfgrw(sc->ctx, 1, 0, 1, 0, 0x00, 2, (uint32_t *)&val);
+	bhyve_pci_cfgrw(sc->ctx, 1, 0, 1, 0, 0x00, 2,
+	    (uint32_t *)&val);
 	printf("slot 1 val 0x%x\n", val);
 
 	return (0);
