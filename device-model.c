@@ -157,20 +157,6 @@ dm_init(struct epw_softc *sc)
 	printf("%s: device-model initialized\n", __func__);
 }
 
-static void
-e1000_poll(void)
-{
-	int intr;
-
-	intr = intr_disable();
-	e82545_tx_poll();
-	intr_restore(intr);
-
-	intr = intr_disable();
-	e82545_rx_poll(NULL);
-	intr_restore(intr);
-}
-
 void
 dm_loop(struct epw_softc *sc)
 {

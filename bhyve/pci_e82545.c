@@ -42,6 +42,9 @@
 #include <sys/uio.h>
 #include <net/ethernet.h>
 
+#include <machine/cpuregs.h>
+#include <machine/cpufunc.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1465,14 +1468,9 @@ e82545_tx_thread(void *param)
 	}
 }
 #else
-void
-e82545_tx_poll(void)
+static void
+e82545_tx_poll(struct e82545_softc *sc)
 {
-	struct e82545_softc *sc;
-
-	sc = e82545_sc;
-	if (sc == NULL)
-		return;
 
 	if (sc->esc_tx_enabled && sc->esc_TDHr != sc->esc_TDT) {
 		sc->esc_tx_active = 1;
@@ -1482,18 +1480,35 @@ e82545_tx_poll(void)
 		sc->esc_tx_active = 0;
 }
 
-void
+static void
 e82545_rx_poll(void *arg)
 {
 	struct e82545_softc *sc;
+
+	sc = arg;
+
+	e82545_tap_callback(0, 0, sc);
+
+	fifo_interrupts_enable(sc->fifo_rx, FIFO_RX_EVENTS);
+}
+
+void
+e1000_poll(void)
+{
+	struct e82545_softc *sc;
+	int intr;
 
 	sc = e82545_sc;
 	if (sc == NULL)
 		return;
 
-	e82545_tap_callback(0, 0, sc);
+	intr = intr_disable();
+	e82545_tx_poll(sc);
+	intr_restore(intr);
 
-	fifo_interrupts_enable(sc->fifo_rx, FIFO_RX_EVENTS);
+	intr = intr_disable();
+	e82545_rx_poll(sc);
+	intr_restore(intr);
 }
 
 int
@@ -1514,7 +1529,7 @@ e82545_setup_fifo(struct altera_fifo_softc *fifo_tx,
 
 	printf("%s: Enabling RX interrupts\n", __func__);
 	fifo_rx->cb = e82545_rx_poll;
-	fifo_rx->cb_arg = NULL;
+	fifo_rx->cb_arg = sc;
 	fifo_interrupts_enable(fifo_rx, FIFO_RX_EVENTS);
 
 	return (0);
@@ -2487,4 +2502,3 @@ struct pci_devemu pci_de_e82545 = {
 	.pe_barread =	e82545_read
 };
 PCI_EMUL_SET(pci_de_e82545);
-
