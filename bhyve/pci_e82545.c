@@ -30,65 +30,27 @@
  */
 
 #include <sys/cdefs.h>
-#if 0
-__FBSDID("$FreeBSD$");
-#endif
 #include <sys/param.h>
 #include <sys/endian.h>
 
+#include <sys/errno.h>
 #include <sys/types.h>
 #ifndef WITHOUT_CAPSICUM
 #include <sys/capsicum.h>
 #endif
 #include <sys/limits.h>
-#if 0
-#include <sys/ioctl.h>
 #include <sys/uio.h>
 #include <net/ethernet.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#else
-#include <sys/uio.h>
-#include <net/ethernet.h>
-#endif
 
-#if 0
-#include <err.h>
-#endif
-#if 0
-#include <errno.h>
-#else
-#include <sys/errno.h>
-#endif
-#if 0
-#include <fcntl.h>
-#include <md5.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if 0
-#include <sysexits.h>
-#endif
 #include <unistd.h>
-#if 0
-#include <pthread.h>
-#include <pthread_np.h>
-#endif
 
-#if 0
-#include "e1000_regs.h"
-#include "e1000_defines.h"
-#include "mii.h"
-#else
 #include <dev/e1000/e1000_regs.h>
 #include <dev/e1000/e1000_defines.h>
 #include <dev/mii/mii.h>
-#endif
 
-#if 0
-#include "bhyverun.h"
-#endif
 #include "pci_emul.h"
 #include "pci_e82545.h"
 #include "mevent.h"
@@ -272,13 +234,8 @@ struct ck_info {
  * Debug printf
  */
 static int e82545_debug = 0;
-#if 0
-#define DPRINTF(msg,params...) if (e82545_debug) fprintf(stderr, "e82545: " msg, params)
-#define WPRINTF(msg,params...) fprintf(stderr, "e82545: " msg, params)
-#else
 #define DPRINTF(msg,params...) if (e82545_debug) printf("e82545: " msg, params)
 #define WPRINTF(msg,params...) printf("e82545: " msg, params)
-#endif
 
 #define	MIN(a,b) (((a)<(b))?(a):(b))
 #define	MAX(a,b) (((a)>(b))?(a):(b))
@@ -296,9 +253,6 @@ struct e82545_softc {
 	struct vmctx	*esc_ctx;
 	struct mevent   *esc_mevp;
 	struct mevent   *esc_mevpitr;
-#if 0
-	pthread_mutex_t	esc_mtx;
-#endif
 	struct ether_addr esc_mac;
 	int		esc_tapfd;
 
@@ -323,10 +277,6 @@ struct e82545_softc {
 	/* Transmit */
 	union e1000_tx_udesc *esc_txdesc;
 	struct e1000_context_desc esc_txctx;
-#if 0
-	pthread_t	esc_tx_tid;
-	pthread_cond_t	esc_tx_cond;
-#endif
 	int		esc_tx_enabled;
 	int		esc_tx_active;
 	uint32_t	esc_TXCW;	/* x0178 transmit config */
@@ -351,9 +301,6 @@ struct e82545_softc {
 	
 	/* Receive */
 	struct e1000_rx_desc *esc_rxdesc;
-#if 0
-	pthread_cond_t	esc_rx_cond;
-#endif
 	int		esc_rx_enabled;
 	int		esc_rx_active;
 	int		esc_rx_loopback;
@@ -622,23 +569,14 @@ e82545_itr_callback(int fd, enum ev_type type, void *param)
 	uint32_t new;
 	struct e82545_softc *sc = param;
 
-#if 0
-	pthread_mutex_lock(&sc->esc_mtx);
-#endif
 	new = sc->esc_ICR & sc->esc_IMS;
 	if (new && !sc->esc_irq_asserted) {
 		DPRINTF("itr callback: lintr assert %x\r\n", new);
 		sc->esc_irq_asserted = 1;
 		pci_lintr_assert(sc->esc_pi);
 	} else {
-#if 0
-		mevent_delete(sc->esc_mevpitr);
-#endif
 		sc->esc_mevpitr = NULL;
 	}
-#if 0
-	pthread_mutex_unlock(&sc->esc_mtx);
-#endif
 }
 #endif
 
@@ -917,9 +855,6 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	uint32_t cause = 0;
 	uint16_t *tp, tag, head;
 
-#if 0
-	pthread_mutex_lock(&sc->esc_mtx);
-#endif
 	DPRINTF("rx_run: head %x, tail %x\r\n", sc->esc_RDH, sc->esc_RDT);
 
 	if (!sc->esc_rx_enabled || sc->esc_rx_loopback) {
@@ -948,9 +883,6 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	}
 
 	sc->esc_rx_active = 1;
-#if 0
-	pthread_mutex_unlock(&sc->esc_mtx);
-#endif
 
 	for (lim = size / 4; lim > 0 && left >= maxpktdesc; lim -= n) {
 
@@ -1031,14 +963,7 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	}
 
 done:
-#if 0
-	pthread_mutex_lock(&sc->esc_mtx);
-#endif
 	sc->esc_rx_active = 0;
-#if 0
-	if (sc->esc_rx_enabled == 0)
-		pthread_cond_signal(&sc->esc_rx_cond);
-#endif
 
 	sc->esc_RDH = head;
 	/* Respect E1000_RCTL_RDMTS */
@@ -1050,9 +975,6 @@ done:
 		e82545_icr_assert(sc, cause);
 done1:
 	DPRINTF("rx_run done: head %x, tail %x\r\n", sc->esc_RDH, sc->esc_RDT);
-#if 0
-	pthread_mutex_unlock(&sc->esc_mtx);
-#endif
 }
 
 static uint16_t
@@ -1501,9 +1423,6 @@ e82545_tx_run(struct e82545_softc *sc)
 	DPRINTF("tx_run: head %x, rhead %x, tail %x\r\n",
 	    sc->esc_TDH, sc->esc_TDHr, sc->esc_TDT);
 
-#if 0
-	pthread_mutex_unlock(&sc->esc_mtx);
-#endif
 	rhead = head;
 	tdwb = 0;
 	for (lim = size / 4; sc->esc_tx_enabled && lim > 0; lim -= sent) {
@@ -1512,9 +1431,6 @@ e82545_tx_run(struct e82545_softc *sc)
 			break;
 		head = rhead;
 	}
-#if 0
-	pthread_mutex_lock(&sc->esc_mtx);
-#endif
 
 	sc->esc_TDH = head;
 	sc->esc_TDHr = rhead;
@@ -1536,19 +1452,11 @@ e82545_tx_thread(void *param)
 {
 	struct e82545_softc *sc = param;
 
-#if 0
-	pthread_mutex_lock(&sc->esc_mtx);
-#endif
 	for (;;) {
 		while (!sc->esc_tx_enabled || sc->esc_TDHr == sc->esc_TDT) {
 			if (sc->esc_tx_enabled && sc->esc_TDHr != sc->esc_TDT)
 				break;
 			sc->esc_tx_active = 0;
-#if 0
-			if (sc->esc_tx_enabled == 0)
-				pthread_cond_signal(&sc->esc_tx_cond);
-			pthread_cond_wait(&sc->esc_tx_cond, &sc->esc_mtx);
-#endif
 		}
 		sc->esc_tx_active = 1;
 
@@ -1617,10 +1525,6 @@ static void
 e82545_tx_start(struct e82545_softc *sc)
 {
 
-#if 0
-	if (sc->esc_tx_active == 0)
-		pthread_cond_signal(&sc->esc_tx_cond);
-#endif
 }
 
 static void
@@ -1635,10 +1539,6 @@ e82545_tx_disable(struct e82545_softc *sc)
 {
 
 	sc->esc_tx_enabled = 0;
-#if 0
-	while (sc->esc_tx_active)
-		pthread_cond_wait(&sc->esc_tx_cond, &sc->esc_mtx);
-#endif
 }
 
 static void
@@ -1653,10 +1553,6 @@ e82545_rx_disable(struct e82545_softc *sc)
 {
 
 	sc->esc_rx_enabled = 0;
-#if 0
-	while (sc->esc_rx_active)
-		pthread_cond_wait(&sc->esc_rx_cond, &sc->esc_mtx);
-#endif
 }
 
 static void
@@ -2211,10 +2107,6 @@ e82545_write(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 
 	sc = pi->pi_arg;
 
-#if 0
-	pthread_mutex_lock(&sc->esc_mtx);
-#endif
-
 	switch (baridx) {
 	case E82545_BAR_IO:
 		switch (offset) {
@@ -2249,10 +2141,6 @@ e82545_write(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 		DPRINTF("Unknown write bar:%d off:0x%lx val:0x%lx size:%d\r\n",
 			baridx, offset, value, size);
 	}
-
-#if 0
-	pthread_mutex_unlock(&sc->esc_mtx);
-#endif
 }
 
 static uint64_t
@@ -2265,10 +2153,6 @@ e82545_read(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 	DPRINTF("Read  bar:%d offset:0x%lx size:%d\r\n", baridx, offset, size);
 	sc = pi->pi_arg;
 	retval = 0;
-
-#if 0
-	pthread_mutex_lock(&sc->esc_mtx);
-#endif
 
 	switch (baridx) {
 	case E82545_BAR_IO:
@@ -2307,10 +2191,6 @@ e82545_read(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 			baridx, offset, size);
 		break;
 	}
-
-#if 0
-	pthread_mutex_unlock(&sc->esc_mtx);
-#endif
 
 	return (retval);
 }
@@ -2507,17 +2387,8 @@ e82545_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 	sc->esc_pi = pi;
 	sc->esc_ctx = ctx;
 
-#if 0
-	pthread_mutex_init(&sc->esc_mtx, NULL);
-	pthread_cond_init(&sc->esc_rx_cond, NULL);
-	pthread_cond_init(&sc->esc_tx_cond, NULL);
-	pthread_create(&sc->esc_tx_tid, NULL, e82545_tx_thread, sc);
-#endif
 	snprintf(nstr, sizeof(nstr), "e82545-%d:%d tx", pi->pi_slot,
 	    pi->pi_func);
-#if 0
-        pthread_set_name_np(sc->esc_tx_tid, nstr);
-#endif
 
 	pci_set_cfgdata16(pi, PCIR_DEVICE, E82545_DEV_ID_82545EM_COPPER);
 	pci_set_cfgdata16(pi, PCIR_VENDOR, E82545_VENDOR_ID_INTEL);
