@@ -113,6 +113,7 @@ void
 emul_msgdma_poll(struct msgdma_softc *sc)
 {
 	struct msgdma_desc *desc;
+	struct iovec iov;
 	uint64_t base;
 	uint32_t intr;
 	uint32_t reg;
@@ -124,7 +125,6 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 		return;
 
 	intr = intr_disable();
-	struct iovec iov;
 
 	count = 0;
 	do {

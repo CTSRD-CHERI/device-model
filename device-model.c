@@ -61,9 +61,6 @@
 #define	dprintf(fmt, ...)
 #endif
 
-#undef FWD_ENABLE
-#undef MSGDMA_ENABLE
-
 struct msgdma_softc msgdma0_sc;
 struct msgdma_softc msgdma1_sc;
 struct altera_fifo_softc fifo0_sc;
@@ -73,31 +70,25 @@ extern struct e82545_softc *e82545_sc;
 
 int req_count;
 
-#ifdef FWD_ENABLE
 const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
 	{ 0x0000, 0x20, MSGDMA0_BASE_CSR,  fwd_request },	/* Control Status Register */
 	{ 0x0020, 0x20, MSGDMA0_BASE_DESC, fwd_request },	/* Prefetcher */
 	{ 0x0040, 0x20, MSGDMA1_BASE_CSR,  fwd_request },	/* Control Status Register */
 	{ 0x0060, 0x20, MSGDMA1_BASE_DESC, fwd_request },	/* Prefetcher */
 };
-#endif
 
 const struct emul_link emul_map[DM_EMUL_NDEVICES] = {
-#ifdef MSGDMA_ENABLE
 	{ 0x04080, 0x00020, emul_msgdma, &msgdma0_sc, MSGDMA_CSR },
 	{ 0x040a0, 0x00020, emul_msgdma, &msgdma0_sc, MSGDMA_PF  },
 	{ 0x04000, 0x00020, emul_msgdma, &msgdma1_sc, MSGDMA_CSR },
 	{ 0x04020, 0x00020, emul_msgdma, &msgdma1_sc, MSGDMA_PF  },
-#endif
 	{ 0x10000, 0x50000, emul_pci, &pci0_sc, PCI_GENERIC },
 };
 
 static int
 dm_request(struct epw_softc *sc, struct epw_request *req)
 {
-#ifdef FWD_ENABLE
 	const struct fwd_link *flink;
-#endif
 	const struct emul_link *elink;
 	uint64_t offset;
 	int i;
@@ -106,7 +97,6 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 
 	dprintf("%s: offset %lx\n", __func__, offset);
 
-#ifdef FWD_ENABLE
 	/* Check if this is forwarding request */
 	for (i = 0; i < DM_FWD_NDEVICES; i++) {
 		flink = &fwd_map[i];
@@ -116,7 +106,6 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 			return (0);
 		}
 	}
-#endif
 
 	/* Check if this is emulation request */
 	for (i = 0; i < DM_EMUL_NDEVICES; i++) {
@@ -168,6 +157,20 @@ dm_init(struct epw_softc *sc)
 	printf("%s: device-model initialized\n", __func__);
 }
 
+static void
+e1000_poll(void)
+{
+	int intr;
+
+	intr = intr_disable();
+	e82545_tx_poll();
+	intr_restore(intr);
+
+	intr = intr_disable();
+	e82545_rx_poll(NULL);
+	intr_restore(intr);
+}
+
 void
 dm_loop(struct epw_softc *sc)
 {
@@ -184,22 +187,18 @@ dm_loop(struct epw_softc *sc)
 			epw_reply(sc, &req);
 		}
 
+		/*
+		 * TODO: BERI register interface hardware bug
+		 * requires to wait a bit before reply
+		 */
 		usleep(5000);
 
-#ifdef MSGDMA_ENABLE
 		emul_msgdma_poll(&msgdma0_sc);
 		emul_msgdma_poll(&msgdma1_sc);
-#else
-		int intr;
-		intr = intr_disable();
-		e82545_tx_poll();
-		intr_restore(intr);
 
-		intr = intr_disable();
-		e82545_rx_poll(NULL);
-		intr_restore(intr);
-#endif
+		e1000_poll();
 
+		/* Poll for ACHI SATA request */
 		blockif_thr();
 	}
 }
