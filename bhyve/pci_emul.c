@@ -29,18 +29,12 @@
  */
 
 #include <sys/cdefs.h>
-#if 0
-__FBSDID("$FreeBSD$");
-#endif
 
 #include <sys/param.h>
 #include <sys/linker_set.h>
 
 #include <ctype.h>
 #include <sys/errno.h>
-#if 0
-#include <pthread.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,19 +42,7 @@ __FBSDID("$FreeBSD$");
 #include <assert.h>
 #include <stdbool.h>
 
-#if 0
-#include <machine/vmm.h>
-#include <vmmapi.h>
-#endif
-
-#if 0
-#include "acpi.h"
-#include "bhyverun.h"
-#endif
 #include "inout.h"
-#if 0
-#include "ioapic.h"
-#endif
 #include "mem.h"
 #include "pci_emul.h"
 #include "pci_irq.h"
@@ -770,9 +752,6 @@ pci_emul_init(struct vmctx *ctx, struct pci_devemu *pde, int bus, int slot,
 	pdi->pi_bus = bus;
 	pdi->pi_slot = slot;
 	pdi->pi_func = func;
-#if 0
-	pthread_mutex_init(&pdi->pi_lintr.lock, NULL);
-#endif
 	pdi->pi_lintr.pin = 0;
 	pdi->pi_lintr.state = IDLE;
 	pdi->pi_lintr.pirq_pin = 0;
@@ -1587,9 +1566,6 @@ pci_lintr_assert(struct pci_devinst *pi)
 
 	assert(pi->pi_lintr.pin > 0);
 
-#if 0
-	pthread_mutex_lock(&pi->pi_lintr.lock);
-#endif
 	if (pi->pi_lintr.state == IDLE) {
 		if (pci_lintr_permitted(pi)) {
 			pi->pi_lintr.state = ASSERTED;
@@ -1597,9 +1573,6 @@ pci_lintr_assert(struct pci_devinst *pi)
 		} else
 			pi->pi_lintr.state = PENDING;
 	}
-#if 0
-	pthread_mutex_unlock(&pi->pi_lintr.lock);
-#endif
 }
 
 void
@@ -1608,26 +1581,17 @@ pci_lintr_deassert(struct pci_devinst *pi)
 
 	assert(pi->pi_lintr.pin > 0);
 
-#if 0
-	pthread_mutex_lock(&pi->pi_lintr.lock);
-#endif
 	if (pi->pi_lintr.state == ASSERTED) {
 		pi->pi_lintr.state = IDLE;
 		pci_irq_deassert(pi);
 	} else if (pi->pi_lintr.state == PENDING)
 		pi->pi_lintr.state = IDLE;
-#if 0
-	pthread_mutex_unlock(&pi->pi_lintr.lock);
-#endif
 }
 
 static void
 pci_lintr_update(struct pci_devinst *pi)
 {
 
-#if 0
-	pthread_mutex_lock(&pi->pi_lintr.lock);
-#endif
 	if (pi->pi_lintr.state == ASSERTED && !pci_lintr_permitted(pi)) {
 		pci_irq_deassert(pi);
 		pi->pi_lintr.state = PENDING;
@@ -1635,9 +1599,6 @@ pci_lintr_update(struct pci_devinst *pi)
 		pi->pi_lintr.state = ASSERTED;
 		pci_irq_assert(pi);
 	}
-#if 0
-	pthread_mutex_unlock(&pi->pi_lintr.lock);
-#endif
 }
 
 int
