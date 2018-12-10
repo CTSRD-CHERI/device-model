@@ -33,10 +33,6 @@
 
 #include <sys/types.h>
 #include <sys/queue.h>
-#if 0
-#include <sys/kernel.h>
-#include <sys/_pthreadtypes.h>
-#endif
 
 #include <dev/pci/pcireg.h>
 
@@ -126,9 +122,6 @@ struct pci_devinst {
 		enum lintr_stat	state;
 		int		pirq_pin;
 		int	  	ioapic_irq;
-#if 0
-		pthread_mutex_t	lock;
-#endif
 	} pi_lintr;
 
 	struct {
