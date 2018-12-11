@@ -2162,19 +2162,20 @@ bhyve_pci_init(struct vmctx *ctx)
 	bi = pci_businfo[bnum];
 	si = &bi->slotinfo[snum];
 
-	/* Setup e82545 device at 0/0/0 */
+	/* Setup e82545 device at 0/0/0. */
 	name = malloc(16);
 	sprintf(name, "e1000");
 	si->si_funcs[fnum].fi_name = name;
 	si->si_funcs[fnum].fi_param = NULL;
 
-	/* Setup AHCI device at 0/1/0 */
+	/* Setup AHCI device at 0/1/0. */
 	snum = 1;
 	si = &bi->slotinfo[snum];
 	name = malloc(16);
 	sprintf(name, "ahci-hd");
 	si->si_funcs[fnum].fi_name = name;
 
+	/* Add an opt string which is unused. */
 	optstr = malloc(16);
 	sprintf(optstr, "hd:test");
 	si->si_funcs[fnum].fi_param = optstr;
