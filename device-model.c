@@ -163,10 +163,12 @@ dm_loop(struct epw_softc *sc)
 	struct epw_request req;
 	int ret;
 
-	printf("Hello World!\n");
+	printf("%s: enter\n", __func__);
 
 	while (1) {
-		req_count++;
+		if (req_count++ % 500 == 0)
+			printf("%s: req count %d\n",
+			    __func__, req_count);
 
 		if (epw_request(sc, &req) != 0) {
 			ret = dm_request(sc, &req);
@@ -175,16 +177,18 @@ dm_loop(struct epw_softc *sc)
 
 		/*
 		 * TODO: BERI register interface hardware bug
-		 * requires to wait a bit before reply
+		 * requires a delay before reply.
 		 */
 		usleep(5000);
 
+		/* Poll mSGDMA TX/RX descriptors. */
 		emul_msgdma_poll(&msgdma0_sc);
 		emul_msgdma_poll(&msgdma1_sc);
 
+		/* Poll Intel E1000 descriptors. */
 		e1000_poll();
 
-		/* Poll for ACHI SATA request */
+		/* Poll for AHCI SATA request. */
 		blockif_thr();
 	}
 }
