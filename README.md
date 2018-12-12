@@ -1,6 +1,10 @@
 # device-model
 
-This application emulates various devices on CHERI platform.
+This application emulates various peripherals on CHERI platform:
+⋅⋅* Altera Modular Scatter-Gather DMA engine (mSGDMA)
+⋅⋅* ARM Generic ECAM PCI-controller
+⋅⋅* Intel E1000 ethernet device
+⋅⋅* AHCI controller and memory-backed Serial ATA device
 
 CHERI CPU used by this application is synthesized on Altera FPGA and prototyped on Altera DE4 board.
 
@@ -36,7 +40,7 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
 
     $ nc 10.10.0.2 1234 < dm.bin
 
-### Program device-model to DDR memory from a FreeBSD that runs on a 1st core. Start execution DM.
+### Program device-model to DDR memory from a FreeBSD that runs on a 1st core. Start execution DM. This enables peripheral window (register interface).
 
     $ bm -rRl /var/tmp/dm.bin
 
@@ -44,8 +48,7 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
 
     $ nios2-terminal -i 2
 
-### Re-attach device drivers and enable peripheral window (register interface).
-
+### Emulate mSGMDA
     $ devctl disable atse1
     $ devctl disable msgdma2
     $ devctl disable msgdma3
@@ -53,8 +56,11 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
     $ devctl enable msgdma2
     $ devctl enable msgdma3
     $ devctl enable atse1
-
     $ ifconfig atse1 10.4.0.2/24
+
+### Emulate PCI
+    $ devctl disable pci0
+    $ devctl enable pci0
 
 ### Example device-tree node for PCI-e device
 ```
