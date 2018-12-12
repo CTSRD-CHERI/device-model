@@ -14,6 +14,7 @@ OBJECTS =	alloc.o						\
 		bhyve/pci_ahci.o				\
 		bhyve/pci_emul.o				\
 		bhyve/pci_e82545.o				\
+		bhyve/pthread.o					\
 		device-model.o					\
 		emul_msgdma.o					\
 		emul_pci.o					\

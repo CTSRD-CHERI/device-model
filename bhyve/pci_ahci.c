@@ -66,6 +66,7 @@ __FBSDID("$FreeBSD$");
 #endif
 
 #define	MIN(a,b)	(((a)<(b))?(a):(b))
+#include "pthread.h"
 #include "bhyve_support.h"
 #include <md5/md5.h>
 #if 0
@@ -214,9 +215,7 @@ struct ahci_prdt_entry {
 
 struct pci_ahci_softc {
 	struct pci_devinst *asc_pi;
-#if 0
 	pthread_mutex_t	mtx;
-#endif
 	int ports;
 	uint32_t cap;
 	uint32_t ghc;
@@ -507,9 +506,7 @@ ahci_port_stop(struct ahci_port *p)
 	int slot;
 	int error;
 
-#if 0
 	assert(pthread_mutex_isowned_np(&p->pr_sc->mtx));
-#endif
 
 	TAILQ_FOREACH(aior, &p->iobhd, io_blist) {
 		/*
@@ -1947,9 +1944,7 @@ ata_ioreq_cb(struct blockif_req *br, int err)
 
 	DPRINTF("%s: cfis[2] %d ncq %d dsm %d\n", __func__, cfis[2], ncq, dsm);
 
-#if 0
 	pthread_mutex_lock(&sc->mtx);
-#endif
 
 	/*
 	 * Delete the blockif request from the busy list
@@ -1989,9 +1984,7 @@ ata_ioreq_cb(struct blockif_req *br, int err)
 	ahci_check_stopped(p);
 	ahci_handle_port(p);
 out:
-#if 0
 	pthread_mutex_unlock(&sc->mtx);
-#endif
 	DPRINTF("%s exit\n", __func__);
 }
 
@@ -2015,9 +2008,7 @@ atapi_ioreq_cb(struct blockif_req *br, int err)
 	sc = p->pr_sc;
 	hdr = (struct ahci_cmd_hdr *)(p->cmd_lst + aior->slot * AHCI_CL_SIZE);
 
-#if 0
 	pthread_mutex_lock(&sc->mtx);
-#endif
 
 	/*
 	 * Delete the blockif request from the busy list
@@ -2055,9 +2046,7 @@ atapi_ioreq_cb(struct blockif_req *br, int err)
 	ahci_check_stopped(p);
 	ahci_handle_port(p);
 out:
-#if 0
 	pthread_mutex_unlock(&sc->mtx);
-#endif
 	DPRINTF("%s exit\n", __func__);
 }
 
@@ -2234,11 +2223,9 @@ pci_ahci_write(struct vmctx *ctx, int vcpu, struct pci_devinst *pi,
 	struct pci_ahci_softc *sc = pi->pi_arg;
 
 	assert(baridx == 5);
-	assert((offset % 4) == 0 && size == 4);
+	assert((offset % 4) == 0);
 
-#if 0
 	pthread_mutex_lock(&sc->mtx);
-#endif
 
 	if (offset < AHCI_OFFSET)
 		pci_ahci_host_write(sc, offset, value);
@@ -2247,9 +2234,7 @@ pci_ahci_write(struct vmctx *ctx, int vcpu, struct pci_devinst *pi,
 	else
 		WPRINTF("pci_ahci: unknown i/o write offset 0x%"PRIx64"\n", offset);
 
-#if 0
 	pthread_mutex_unlock(&sc->mtx);
-#endif
 }
 
 static uint64_t
@@ -2337,9 +2322,7 @@ pci_ahci_read(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 	assert(size == 1 || size == 2 || size == 4);
 	assert((regoff & (size - 1)) == 0);
 
-#if 0
 	pthread_mutex_lock(&sc->mtx);
-#endif
 
 	offset = regoff & ~0x3;	    /* round down to a multiple of 4 bytes */
 	if (offset < AHCI_OFFSET)
@@ -2353,9 +2336,7 @@ pci_ahci_read(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 	}
 	value >>= 8 * (regoff & 0x3);
 
-#if 0
 	pthread_mutex_unlock(&sc->mtx);
-#endif
 
 	return (value);
 }
@@ -2382,9 +2363,7 @@ pci_ahci_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts, int atapi)
 	sc = calloc(1, sizeof(struct pci_ahci_softc));
 	pi->pi_arg = sc;
 	sc->asc_pi = pi;
-#if 0
 	pthread_mutex_init(&sc->mtx, NULL);
-#endif
 	sc->ports = 0;
 	sc->pi = 0;
 	slots = 32;
