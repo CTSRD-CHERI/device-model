@@ -38,6 +38,8 @@
 
 #include <assert.h>
 
+#include "pthread.h"
+
 #define	PCI_BARMAX	PCIR_MAX_BAR_0	/* BAR registers in a Type 0 header */
 
 struct vmctx;
@@ -122,6 +124,7 @@ struct pci_devinst {
 		enum lintr_stat	state;
 		int		pirq_pin;
 		int	  	ioapic_irq;
+		pthread_mutex_t	lock;
 	} pi_lintr;
 
 	struct {

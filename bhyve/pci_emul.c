@@ -49,6 +49,7 @@
 #include "pci_lpc.h"
 
 #include "bhyve_support.h"
+#include "pthread.h"
 
 #define CONF1_ADDR_PORT    0x0cf8
 #define CONF1_DATA_PORT    0x0cfc
@@ -752,6 +753,7 @@ pci_emul_init(struct vmctx *ctx, struct pci_devemu *pde, int bus, int slot,
 	pdi->pi_bus = bus;
 	pdi->pi_slot = slot;
 	pdi->pi_func = func;
+	pthread_mutex_init(&pdi->pi_lintr.lock, NULL);
 	pdi->pi_lintr.pin = 0;
 	pdi->pi_lintr.state = IDLE;
 	pdi->pi_lintr.pirq_pin = 0;
@@ -1566,6 +1568,7 @@ pci_lintr_assert(struct pci_devinst *pi)
 
 	assert(pi->pi_lintr.pin > 0);
 
+	pthread_mutex_lock(&pi->pi_lintr.lock);
 	if (pi->pi_lintr.state == IDLE) {
 		if (pci_lintr_permitted(pi)) {
 			pi->pi_lintr.state = ASSERTED;
@@ -1573,6 +1576,7 @@ pci_lintr_assert(struct pci_devinst *pi)
 		} else
 			pi->pi_lintr.state = PENDING;
 	}
+	pthread_mutex_unlock(&pi->pi_lintr.lock);
 }
 
 void
@@ -1581,17 +1585,20 @@ pci_lintr_deassert(struct pci_devinst *pi)
 
 	assert(pi->pi_lintr.pin > 0);
 
+	pthread_mutex_lock(&pi->pi_lintr.lock);
 	if (pi->pi_lintr.state == ASSERTED) {
 		pi->pi_lintr.state = IDLE;
 		pci_irq_deassert(pi);
 	} else if (pi->pi_lintr.state == PENDING)
 		pi->pi_lintr.state = IDLE;
+	pthread_mutex_unlock(&pi->pi_lintr.lock);
 }
 
 static void
 pci_lintr_update(struct pci_devinst *pi)
 {
 
+	pthread_mutex_lock(&pi->pi_lintr.lock);
 	if (pi->pi_lintr.state == ASSERTED && !pci_lintr_permitted(pi)) {
 		pci_irq_deassert(pi);
 		pi->pi_lintr.state = PENDING;
@@ -1599,6 +1606,7 @@ pci_lintr_update(struct pci_devinst *pi)
 		pi->pi_lintr.state = ASSERTED;
 		pci_irq_assert(pi);
 	}
+	pthread_mutex_unlock(&pi->pi_lintr.lock);
 }
 
 int

@@ -45,6 +45,7 @@
 #include <stdlib.h>
 
 #include "mem.h"
+#include "pthread.h"
 
 #define	VM_MAXCPU	1
 
@@ -86,6 +87,8 @@ RB_HEAD(mmio_rb_tree, mmio_rb_range) mmio_rb_root, mmio_rb_fallback;
  * result of a lookup.
  */
 static struct mmio_rb_range	*mmio_hint[VM_MAXCPU];
+
+static pthread_rwlock_t mmio_rwlock;
 
 void	mmio_rb_dump(struct mmio_rb_tree *rbt);
 
@@ -142,12 +145,16 @@ mmio_rb_add(struct mmio_rb_tree *rbt, struct mmio_rb_range *new)
 void
 mmio_rb_dump(struct mmio_rb_tree *rbt)
 {
+	int perror;
 	struct mmio_rb_range *np;
 
+	pthread_rwlock_rdlock(&mmio_rwlock);
 	RB_FOREACH(np, mmio_rb_tree, rbt) {
 		printf(" %lx:%lx, %s\n", np->mr_base, np->mr_end,
 		       np->mr_param.name);
 	}
+	perror = pthread_rwlock_unlock(&mmio_rwlock);
+	assert(perror == 0);
 }
 
 RB_GENERATE(mmio_rb_tree, mmio_rb_range, mr_link, mmio_rb_range_compare);
@@ -160,8 +167,9 @@ access_memory(struct vmctx *ctx, int vcpu, uint64_t paddr, mem_cb_t *cb,
     void *arg)
 {
 	struct mmio_rb_range *entry;
-	int err;
+	int err, perror, immutable;
 	
+	pthread_rwlock_rdlock(&mmio_rwlock);
 	/*
 	 * First check the per-vCPU cache
 	 */
@@ -176,13 +184,38 @@ access_memory(struct vmctx *ctx, int vcpu, uint64_t paddr, mem_cb_t *cb,
 		if (mmio_rb_lookup(&mmio_rb_root, paddr, &entry) == 0) {
 			/* Update the per-vCPU cache */
 			mmio_hint[vcpu] = entry;			
-		} else if (mmio_rb_lookup(&mmio_rb_fallback, paddr, &entry))
+		} else if (mmio_rb_lookup(&mmio_rb_fallback, paddr, &entry)) {
+			perror = pthread_rwlock_unlock(&mmio_rwlock);
+			assert(perror == 0);
 			return (ESRCH);
+		}
 	}
 
 	assert(entry != NULL);
 
+	/*
+	 * An 'immutable' memory range is guaranteed to be never removed
+	 * so there is no need to hold 'mmio_rwlock' while calling the
+	 * handler.
+	 *
+	 * XXX writes to the PCIR_COMMAND register can cause register_mem()
+	 * to be called. If the guest is using PCI extended config space
+	 * to modify the PCIR_COMMAND register then register_mem() can
+	 * deadlock on 'mmio_rwlock'. However by registering the extended
+	 * config space window as 'immutable' the deadlock can be avoided.
+	 */
+	immutable = (entry->mr_param.flags & MEM_F_IMMUTABLE);
+	if (immutable) {
+		perror = pthread_rwlock_unlock(&mmio_rwlock);
+		assert(perror == 0);
+	}
+
 	err = cb(ctx, vcpu, paddr, &entry->mr_param, arg);
+
+	if (!immutable) {
+		perror = pthread_rwlock_unlock(&mmio_rwlock);
+		assert(perror == 0);
+	}
 
 	return (err);
 }
@@ -247,7 +280,7 @@ static int
 register_mem_int(struct mmio_rb_tree *rbt, struct mem_range *memp)
 {
 	struct mmio_rb_range *entry, *mrp;
-	int err;
+	int err, perror;
 
 	err = 0;
 
@@ -260,8 +293,11 @@ register_mem_int(struct mmio_rb_tree *rbt, struct mem_range *memp)
 		mrp->mr_param = *memp;
 		mrp->mr_base = memp->base;
 		mrp->mr_end = memp->base + memp->size - 1;
+		pthread_rwlock_wrlock(&mmio_rwlock);
 		if (mmio_rb_lookup(rbt, memp->base, &entry) != 0)
 			err = mmio_rb_add(rbt, mrp);
+		perror = pthread_rwlock_unlock(&mmio_rwlock);
+		assert(perror == 0);
 		if (err)
 			free(mrp);
 	}
@@ -294,11 +330,12 @@ unregister_mem(struct mem_range *memp)
 {
 	struct mem_range *mr;
 	struct mmio_rb_range *entry = NULL;
-	int err, i;
+	int err, perror, i;
 
 	dprintf("%s: name %s base %lx size %lx\n",
 	    __func__, memp->name, memp->base, memp->size);
-	
+
+	pthread_rwlock_wrlock(&mmio_rwlock);
 	err = mmio_rb_lookup(&mmio_rb_root, memp->base, &entry);
 	if (err == 0) {
 		mr = &entry->mr_param;
@@ -313,6 +350,8 @@ unregister_mem(struct mem_range *memp)
 				mmio_hint[i] = NULL;
 		}
 	}
+	perror = pthread_rwlock_unlock(&mmio_rwlock);
+	assert(perror == 0);
 
 	if (entry)
 		free(entry);
@@ -326,4 +365,5 @@ init_mem(void)
 
 	RB_INIT(&mmio_rb_root);
 	RB_INIT(&mmio_rb_fallback);
+	pthread_rwlock_init(&mmio_rwlock, NULL);
 }

@@ -113,3 +113,32 @@ pthread_create(pthread_t *restrict thread,
 
 	return (0);
 }
+
+int
+pthread_rwlock_rdlock(pthread_rwlock_t *lock)
+{
+
+	return (0);
+}
+
+int
+pthread_rwlock_unlock(pthread_rwlock_t *lock)
+{
+
+	return (0);
+}
+
+int
+pthread_rwlock_wrlock(pthread_rwlock_t *lock)
+{
+
+	return (0);
+}
+
+int
+pthread_rwlock_init(pthread_rwlock_t *restrict lock,
+    const pthread_rwlockattr_t *restrict attr)
+{
+
+	return (0);
+}

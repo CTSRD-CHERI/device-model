@@ -58,12 +58,22 @@ struct pthread_attr {
 	int test;
 };
 
+struct pthread_rwlock {
+	int test;
+};
+
+struct pthread_rwlockattr {
+	int test;
+};
+
 typedef struct pthread_mutex pthread_mutex_t;
 typedef struct pthread_mutex_attr *pthread_mutexattr_t;
 typedef struct pthread pthread_t;
 typedef struct pthread_cond pthread_cond_t;
 typedef struct pthread_condattr pthread_condattr_t;
 typedef struct pthread_attr pthread_attr_t;
+typedef struct pthread_rwlock pthread_rwlock_t;
+typedef struct pthread_rwlockattr pthread_rwlockattr_t;
 
 int pthread_mutex_lock(pthread_mutex_t *mutex);
 int pthread_mutex_unlock(pthread_mutex_t *mutex);
@@ -79,5 +89,10 @@ int pthread_create(pthread_t *restrict thread,
     const pthread_attr_t *restrict attr, void *(*start_routine)(void *),
     void *restrict arg);
 void pthread_set_name_np(pthread_t thread, const char *name);
+int pthread_rwlock_rdlock(pthread_rwlock_t *lock);
+int pthread_rwlock_unlock(pthread_rwlock_t *lock);
+int pthread_rwlock_wrlock(pthread_rwlock_t *lock);
+int pthread_rwlock_init(pthread_rwlock_t *restrict lock,
+    const pthread_rwlockattr_t *restrict attr);
  
 #endif	/* !_BHYVE_PTHREAD_H_ */
