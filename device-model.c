@@ -166,11 +166,11 @@ dm_loop(struct epw_softc *sc)
 	printf("%s: enter\n", __func__);
 
 	while (1) {
-		if (req_count++ % 500 == 0)
-			printf("%s: req count %d\n",
-			    __func__, req_count);
-
 		if (epw_request(sc, &req) != 0) {
+			if (req_count++ % 500 == 0)
+				printf("%s: req count %d\n",
+				    __func__, req_count);
+
 			ret = dm_request(sc, &req);
 			epw_reply(sc, &req);
 		}
