@@ -30,25 +30,14 @@
  */
 
 #include <sys/cdefs.h>
-#if 0
-__FBSDID("$FreeBSD$");
-#endif
 
 #include <sys/param.h>
 #include <sys/linker_set.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
-#if 0
-#include <sys/ioctl.h>
-#include <sys/disk.h>
-#endif
 #include <sys/ata.h>
 #include <sys/endian.h>
 
-#if 0
-#include <errno.h>
-#include <fcntl.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -56,22 +45,12 @@ __FBSDID("$FreeBSD$");
 #include <strings.h>
 #include <unistd.h>
 #include <assert.h>
-#if 0
-#include <pthread.h>
-#include <pthread_np.h>
-#endif
 #include <inttypes.h>
-#if 0
-#include <md5.h>
-#endif
 
 #define	MIN(a,b)	(((a)<(b))?(a):(b))
 #include "pthread.h"
 #include "bhyve_support.h"
 #include <md5/md5.h>
-#if 0
-#include "bhyverun.h"
-#endif
 #include "pci_emul.h"
 #include "ahci.h"
 #include "block_if.h"
@@ -129,11 +108,7 @@ enum sata_fis_type {
  */
 #ifdef AHCI_DEBUG
 static FILE *dbg;
-#if 0
-#define DPRINTF(format, arg...)	do{fprintf(dbg, format, ##arg);fflush(dbg);}while(0)
-#else
 #define DPRINTF(format, arg...)	do{printf(format, ##arg);}while(0)
-#endif
 #else
 #define DPRINTF(format, arg...)
 #endif
@@ -943,11 +918,7 @@ write_prdt(struct ahci_port *p, int slot, uint8_t *cfis,
 		sublen = MIN(len, dbcsz);
 		memcpy(ptr, from, sublen);
 		len -= sublen;
-#if 0
-		from += sublen;
-#else
 		from = (void *)(uint64_t)((int)from + sublen);
-#endif
 		prdt++;
 	}
 	hdr->prdbc = size - len;
