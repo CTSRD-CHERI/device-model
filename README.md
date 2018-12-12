@@ -1,10 +1,10 @@
 # device-model
 
 This application emulates various peripherals on CHERI platform:
-⋅⋅* Altera Modular Scatter-Gather DMA engine (mSGDMA)
-⋅⋅* ARM Generic ECAM PCI-controller
-⋅⋅* Intel E1000 ethernet device
-⋅⋅* AHCI controller and memory-backed Serial ATA device
+1. Altera Modular Scatter-Gather DMA engine (mSGDMA)
+2. ARM Generic ECAM PCI-controller
+3. Intel E1000 ethernet device
+4. AHCI controller and memory-backed Serial ATA device
 
 CHERI CPU used by this application is synthesized on Altera FPGA and prototyped on Altera DE4 board.
 
