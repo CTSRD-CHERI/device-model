@@ -71,5 +71,45 @@ pthread_mutex_init(pthread_mutex_t *restrict mutex,
     const pthread_mutexattr_t *restrict attr)
 {
 
+	mutex->lock = 0;
+
+	return (0);
+}
+
+int
+pthread_cond_signal(pthread_cond_t *cond)
+{
+
+	return (0);
+}
+
+int
+pthread_cond_init(pthread_cond_t *restrict cond,
+    const pthread_condattr_t *restrict attr)
+{
+
+	return (0);
+}
+
+void
+pthread_set_name_np(pthread_t thread, const char *name)
+{
+
+}
+
+int
+pthread_cond_wait(pthread_cond_t *restrict cond,
+    pthread_mutex_t *restrict mutex)
+{
+
+	return (0);
+}
+
+int
+pthread_create(pthread_t *restrict thread,
+    const pthread_attr_t *restrict attr, void *(*start_routine)(void *),
+    void *restrict arg)
+{
+
 	return (0);
 }

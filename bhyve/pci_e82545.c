@@ -59,6 +59,7 @@
 #include "mevent.h"
 
 #include "bhyve_support.h"
+#include "pthread.h"
 #include <dev/altera/fifo/fifo.h>
 #include <sys/linker_set.h>
 #define	TH_FIN		0x01
@@ -256,6 +257,7 @@ struct e82545_softc {
 	struct vmctx	*esc_ctx;
 	struct mevent   *esc_mevp;
 	struct mevent   *esc_mevpitr;
+	pthread_mutex_t	esc_mtx;
 	struct ether_addr esc_mac;
 	int		esc_tapfd;
 
@@ -280,6 +282,8 @@ struct e82545_softc {
 	/* Transmit */
 	union e1000_tx_udesc *esc_txdesc;
 	struct e1000_context_desc esc_txctx;
+	pthread_t	esc_tx_tid;
+	pthread_cond_t	esc_tx_cond;
 	int		esc_tx_enabled;
 	int		esc_tx_active;
 	uint32_t	esc_TXCW;	/* x0178 transmit config */
@@ -304,6 +308,7 @@ struct e82545_softc {
 	
 	/* Receive */
 	struct e1000_rx_desc *esc_rxdesc;
+	pthread_cond_t	esc_rx_cond;
 	int		esc_rx_enabled;
 	int		esc_rx_active;
 	int		esc_rx_loopback;
@@ -572,6 +577,7 @@ e82545_itr_callback(int fd, enum ev_type type, void *param)
 	uint32_t new;
 	struct e82545_softc *sc = param;
 
+	pthread_mutex_lock(&sc->esc_mtx);
 	new = sc->esc_ICR & sc->esc_IMS;
 	if (new && !sc->esc_irq_asserted) {
 		DPRINTF("itr callback: lintr assert %x\r\n", new);
@@ -580,6 +586,7 @@ e82545_itr_callback(int fd, enum ev_type type, void *param)
 	} else {
 		sc->esc_mevpitr = NULL;
 	}
+	pthread_mutex_unlock(&sc->esc_mtx);
 }
 #endif
 
@@ -858,6 +865,7 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	uint32_t cause = 0;
 	uint16_t *tp, tag, head;
 
+	pthread_mutex_lock(&sc->esc_mtx);
 	DPRINTF("rx_run: head %x, tail %x\r\n", sc->esc_RDH, sc->esc_RDT);
 
 	if (!sc->esc_rx_enabled || sc->esc_rx_loopback) {
@@ -886,6 +894,7 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	}
 
 	sc->esc_rx_active = 1;
+	pthread_mutex_unlock(&sc->esc_mtx);
 
 	for (lim = size / 4; lim > 0 && left >= maxpktdesc; lim -= n) {
 
@@ -966,7 +975,10 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 	}
 
 done:
+	pthread_mutex_lock(&sc->esc_mtx);
 	sc->esc_rx_active = 0;
+	if (sc->esc_rx_enabled == 0)
+		pthread_cond_signal(&sc->esc_rx_cond);
 
 	sc->esc_RDH = head;
 	/* Respect E1000_RCTL_RDMTS */
@@ -978,6 +990,7 @@ done:
 		e82545_icr_assert(sc, cause);
 done1:
 	DPRINTF("rx_run done: head %x, tail %x\r\n", sc->esc_RDH, sc->esc_RDT);
+	pthread_mutex_unlock(&sc->esc_mtx);
 }
 
 static uint16_t
@@ -1426,6 +1439,7 @@ e82545_tx_run(struct e82545_softc *sc)
 	DPRINTF("tx_run: head %x, rhead %x, tail %x\r\n",
 	    sc->esc_TDH, sc->esc_TDHr, sc->esc_TDT);
 
+	pthread_mutex_unlock(&sc->esc_mtx);
 	rhead = head;
 	tdwb = 0;
 	for (lim = size / 4; sc->esc_tx_enabled && lim > 0; lim -= sent) {
@@ -1434,6 +1448,7 @@ e82545_tx_run(struct e82545_softc *sc)
 			break;
 		head = rhead;
 	}
+	pthread_mutex_lock(&sc->esc_mtx);
 
 	sc->esc_TDH = head;
 	sc->esc_TDHr = rhead;
@@ -1449,17 +1464,20 @@ e82545_tx_run(struct e82545_softc *sc)
 	    sc->esc_TDH, sc->esc_TDHr, sc->esc_TDT);
 }
 
-#if 0
 static _Noreturn void *
 e82545_tx_thread(void *param)
 {
 	struct e82545_softc *sc = param;
 
+	pthread_mutex_lock(&sc->esc_mtx);
 	for (;;) {
 		while (!sc->esc_tx_enabled || sc->esc_TDHr == sc->esc_TDT) {
 			if (sc->esc_tx_enabled && sc->esc_TDHr != sc->esc_TDT)
 				break;
 			sc->esc_tx_active = 0;
+			if (sc->esc_tx_enabled == 0)
+				pthread_cond_signal(&sc->esc_tx_cond);
+			pthread_cond_wait(&sc->esc_tx_cond, &sc->esc_mtx);
 		}
 		sc->esc_tx_active = 1;
 
@@ -1467,17 +1485,19 @@ e82545_tx_thread(void *param)
 		e82545_tx_run(sc);
 	}
 }
-#else
+
 static void
 e82545_tx_poll(struct e82545_softc *sc)
 {
 
+	pthread_mutex_lock(&sc->esc_mtx);
 	if (sc->esc_tx_enabled && sc->esc_TDHr != sc->esc_TDT) {
 		sc->esc_tx_active = 1;
 		/* Process some tx descriptors.  Lock dropped inside. */
 		e82545_tx_run(sc);
 	} else
 		sc->esc_tx_active = 0;
+	pthread_mutex_unlock(&sc->esc_mtx);
 }
 
 static void
@@ -1534,12 +1554,13 @@ e82545_setup_fifo(struct altera_fifo_softc *fifo_tx,
 
 	return (0);
 }
-#endif
 
 static void
 e82545_tx_start(struct e82545_softc *sc)
 {
 
+	if (sc->esc_tx_active == 0)
+		pthread_cond_signal(&sc->esc_tx_cond);
 }
 
 static void
@@ -1554,6 +1575,8 @@ e82545_tx_disable(struct e82545_softc *sc)
 {
 
 	sc->esc_tx_enabled = 0;
+	while (sc->esc_tx_active)
+		pthread_cond_wait(&sc->esc_tx_cond, &sc->esc_mtx);
 }
 
 static void
@@ -1568,6 +1591,8 @@ e82545_rx_disable(struct e82545_softc *sc)
 {
 
 	sc->esc_rx_enabled = 0;
+	while (sc->esc_rx_active)
+		pthread_cond_wait(&sc->esc_rx_cond, &sc->esc_mtx);
 }
 
 static void
@@ -2122,6 +2147,8 @@ e82545_write(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 
 	sc = pi->pi_arg;
 
+	pthread_mutex_lock(&sc->esc_mtx);
+
 	switch (baridx) {
 	case E82545_BAR_IO:
 		switch (offset) {
@@ -2156,6 +2183,8 @@ e82545_write(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 		DPRINTF("Unknown write bar:%d off:0x%lx val:0x%lx size:%d\r\n",
 			baridx, offset, value, size);
 	}
+
+	pthread_mutex_unlock(&sc->esc_mtx);
 }
 
 static uint64_t
@@ -2168,6 +2197,8 @@ e82545_read(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 	DPRINTF("Read  bar:%d offset:0x%lx size:%d\r\n", baridx, offset, size);
 	sc = pi->pi_arg;
 	retval = 0;
+
+	pthread_mutex_lock(&sc->esc_mtx);
 
 	switch (baridx) {
 	case E82545_BAR_IO:
@@ -2206,6 +2237,8 @@ e82545_read(struct vmctx *ctx, int vcpu, struct pci_devinst *pi, int baridx,
 			baridx, offset, size);
 		break;
 	}
+
+	pthread_mutex_unlock(&sc->esc_mtx);
 
 	return (retval);
 }
@@ -2402,8 +2435,13 @@ e82545_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 	sc->esc_pi = pi;
 	sc->esc_ctx = ctx;
 
+	pthread_mutex_init(&sc->esc_mtx, NULL);
+	pthread_cond_init(&sc->esc_rx_cond, NULL);
+	pthread_cond_init(&sc->esc_tx_cond, NULL);
+	pthread_create(&sc->esc_tx_tid, NULL, e82545_tx_thread, sc);
 	snprintf(nstr, sizeof(nstr), "e82545-%d:%d tx", pi->pi_slot,
 	    pi->pi_func);
+	pthread_set_name_np(sc->esc_tx_tid, nstr);
 
 	pci_set_cfgdata16(pi, PCIR_DEVICE, E82545_DEV_ID_82545EM_COPPER);
 	pci_set_cfgdata16(pi, PCIR_VENDOR, E82545_VENDOR_ID_INTEL);
