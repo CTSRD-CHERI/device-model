@@ -40,7 +40,9 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
 
     $ nc 10.10.0.2 1234 < dm.bin
 
-### Program device-model to DDR memory from a FreeBSD that runs on a 1st core. Start execution DM. This enables peripheral window (register interface).
+### Program device-model to DDR memory from a FreeBSD that runs on a 1st core. Start execution DM.
+
+This enables peripheral window (register interface).
 
     $ bm -rRl /var/tmp/dm.bin
 
