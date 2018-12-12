@@ -53,11 +53,14 @@
 #include "bhyve_support.h"
 #include "mevent.h"
 #include "block_if.h"
+#include "pthread.h"
 
 #define BLOCKIF_SIG	0xb109b109
 
 #define BLOCKIF_NUMTHR	8
 #define BLOCKIF_MAXREQ	(64 + BLOCKIF_NUMTHR)
+
+#define	MAXCOMLEN	19	/* max command name remembered */
 
 #define	BLOCKIF_DEBUG
 #undef	BLOCKIF_DEBUG
@@ -95,7 +98,7 @@ struct blockif_elem {
 	struct blockif_req  *be_req;
 	enum blockop	     be_op;
 	enum blockstat	     be_status;
-	int                  be_tid;
+	pthread_t            be_tid;
 	off_t		     be_block;
 };
 
@@ -111,6 +114,9 @@ struct blockif_ctxt {
 	int			bc_psectsz;
 	int			bc_psectoff;
 	int			bc_closing;
+	pthread_t		bc_btid[BLOCKIF_NUMTHR];
+	pthread_mutex_t		bc_mtx;
+	pthread_cond_t		bc_cond;
 
 	/* Request elements and free/pending/busy queues */
 	TAILQ_HEAD(, blockif_elem) bc_freeq;       
@@ -120,6 +126,8 @@ struct blockif_ctxt {
 };
 
 struct blockif_sig_elem {
+	pthread_mutex_t			bse_mtx;
+	pthread_cond_t			bse_cond;
 	int				bse_pending;
 	struct blockif_sig_elem		*bse_next;
 };
@@ -173,7 +181,7 @@ blockif_enqueue(struct blockif_ctxt *bc, struct blockif_req *breq,
 }
 
 static int
-blockif_dequeue(struct blockif_ctxt *bc, int t, struct blockif_elem **bep)
+blockif_dequeue(struct blockif_ctxt *bc, pthread_t t, struct blockif_elem **bep)
 {
 	struct blockif_elem *be;
 
@@ -274,7 +282,7 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 }
 
 void *
-blockif_thr(void)
+blockif_thr(void *arg)
 {
 	struct blockif_softc *sc;
 	struct blockif_ctxt *bc;
@@ -291,10 +299,12 @@ blockif_thr(void)
 	else
 		buf = NULL;
 
+	pthread_mutex_lock(&bc->bc_mtx);
 	while (blockif_dequeue(bc, 0, &be)) {
 		blockif_proc(bc, be, buf);
 		blockif_complete(bc, be);
 	}
+	pthread_mutex_unlock(&bc->bc_mtx);
 
 	return (NULL);
 }
@@ -315,6 +325,7 @@ blockif_init(void)
 struct blockif_ctxt *
 blockif_open(const char *optstr, const char *ident)
 {
+	char tname[MAXCOMLEN + 1];
 	struct blockif_ctxt *bc;
 	off_t psectsz, psectoff;
 	int extra, i, sectsz;
@@ -358,13 +369,20 @@ blockif_open(const char *optstr, const char *ident)
 	bc->bc_sectsz = sectsz;
 	bc->bc_psectsz = psectsz;
 	bc->bc_psectoff = psectoff;
-
+	pthread_mutex_init(&bc->bc_mtx, NULL);
+	pthread_cond_init(&bc->bc_cond, NULL);
 	TAILQ_INIT(&bc->bc_freeq);
 	TAILQ_INIT(&bc->bc_pendq);
 	TAILQ_INIT(&bc->bc_busyq);
 	for (i = 0; i < BLOCKIF_MAXREQ; i++) {
 		bc->bc_reqs[i].be_status = BST_FREE;
 		TAILQ_INSERT_HEAD(&bc->bc_freeq, &bc->bc_reqs[i], be_link);
+	}
+
+	for (i = 0; i < BLOCKIF_NUMTHR; i++) {
+		pthread_create(&bc->bc_btid[i], NULL, blockif_thr, bc);
+		snprintf(tname, sizeof(tname), "blk-%s-%d", ident, i);
+		pthread_set_name_np(bc->bc_btid[i], tname);
 	}
 
 	return (bc);
@@ -380,6 +398,7 @@ blockif_request(struct blockif_ctxt *bc, struct blockif_req *breq,
 
 	err = 0;
 
+	pthread_mutex_lock(&bc->bc_mtx);
 	if (!TAILQ_EMPTY(&bc->bc_freeq))
 		blockif_enqueue(bc, breq, op);
 	else {
@@ -391,6 +410,7 @@ blockif_request(struct blockif_ctxt *bc, struct blockif_req *breq,
 		 */
 		err = E2BIG;
 	}
+	pthread_mutex_unlock(&bc->bc_mtx);
 
 	return (err);
 }
@@ -444,6 +464,7 @@ blockif_cancel(struct blockif_ctxt *bc, struct blockif_req *breq)
 
 	assert(bc->bc_magic == BLOCKIF_SIG);
 
+	pthread_mutex_lock(&bc->bc_mtx);
 	/*
 	 * Check pending requests.
 	 */
@@ -456,6 +477,7 @@ blockif_cancel(struct blockif_ctxt *bc, struct blockif_req *breq)
 		 * Found it.
 		 */
 		blockif_complete(bc, be);
+		pthread_mutex_unlock(&bc->bc_mtx);
 
 		return (0);
 	}
@@ -471,6 +493,7 @@ blockif_cancel(struct blockif_ctxt *bc, struct blockif_req *breq)
 		/*
 		 * Didn't find it.
 		 */
+		pthread_mutex_unlock(&bc->bc_mtx);
 		return (EINVAL);
 	}
 
@@ -481,6 +504,9 @@ blockif_cancel(struct blockif_ctxt *bc, struct blockif_req *breq)
 	while (be->be_status == BST_BUSY) {
 		struct blockif_sig_elem bse, *old_head;
 
+		pthread_mutex_init(&bse.bse_mtx, NULL);
+		pthread_cond_init(&bse.bse_cond, NULL);
+
 		bse.bse_pending = 1;
 
 		do {
@@ -490,7 +516,13 @@ blockif_cancel(struct blockif_ctxt *bc, struct blockif_req *breq)
 					    (uintptr_t)old_head,
 					    (uintptr_t)&bse));
 
+		pthread_mutex_lock(&bse.bse_mtx);
+		while (bse.bse_pending)
+			pthread_cond_wait(&bse.bse_cond, &bse.bse_mtx);
+		pthread_mutex_unlock(&bse.bse_mtx);
 	}
+
+	pthread_mutex_unlock(&bc->bc_mtx);
 
 	/*
 	 * The processing thread has been interrupted.  Since it's not
@@ -510,7 +542,10 @@ blockif_close(struct blockif_ctxt *bc)
 	/*
 	 * Stop the block i/o thread
 	 */
+	pthread_mutex_lock(&bc->bc_mtx);
 	bc->bc_closing = 1;
+	pthread_mutex_unlock(&bc->bc_mtx);
+	pthread_cond_broadcast(&bc->bc_cond);
 
 	/* XXX Cancel queued i/o's ??? */
 

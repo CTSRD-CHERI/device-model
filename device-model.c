@@ -189,6 +189,6 @@ dm_loop(struct epw_softc *sc)
 		e1000_poll();
 
 		/* Poll for AHCI SATA request. */
-		blockif_thr();
+		blockif_thr(NULL);
 	}
 }

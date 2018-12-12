@@ -68,7 +68,7 @@ struct pthread_rwlockattr {
 
 typedef struct pthread_mutex pthread_mutex_t;
 typedef struct pthread_mutex_attr *pthread_mutexattr_t;
-typedef struct pthread pthread_t;
+typedef int pthread_t;
 typedef struct pthread_cond pthread_cond_t;
 typedef struct pthread_condattr pthread_condattr_t;
 typedef struct pthread_attr pthread_attr_t;
@@ -94,5 +94,6 @@ int pthread_rwlock_unlock(pthread_rwlock_t *lock);
 int pthread_rwlock_wrlock(pthread_rwlock_t *lock);
 int pthread_rwlock_init(pthread_rwlock_t *restrict lock,
     const pthread_rwlockattr_t *restrict attr);
+int pthread_cond_broadcast(pthread_cond_t *cond);
  
 #endif	/* !_BHYVE_PTHREAD_H_ */

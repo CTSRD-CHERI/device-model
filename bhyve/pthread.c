@@ -142,3 +142,10 @@ pthread_rwlock_init(pthread_rwlock_t *restrict lock,
 
 	return (0);
 }
+
+int
+pthread_cond_broadcast(pthread_cond_t *cond)
+{
+
+	return (0);
+}
