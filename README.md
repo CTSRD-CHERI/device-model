@@ -91,6 +91,15 @@ pcie@7fb10000 {
 };
 ```
 
+### FreeBSD kernel configuration file
+```
+...
+device		pci
+device		em
+device		ahci
+...
+```
+
 ### Physical memory organization
 
 | Start      | End        | Size   | Description                          |

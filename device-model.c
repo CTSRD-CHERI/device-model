@@ -144,7 +144,7 @@ dm_init(struct epw_softc *sc)
 	malloc_base = 0xffffffffa0000000 + 0x10000000 + 0x01000000/2;
 	malloc_size = 0x01000000/2;
 
-	fl_init();   
+	fl_init();
 	fl_add_region(malloc_base, malloc_size);
 
 	emul_pci_init(&pci0_sc);
