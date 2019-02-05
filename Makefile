@@ -37,7 +37,7 @@ OBJECTS =	alloc.o						\
 		osfive/sys/mips/mips/trap.o			\
 		start.o
 
-.include "${.CURDIR}/osfive/lib/libc/Makefile.inc"
+LIBRARIES = LIBC
 
 WARNFLAGS =			\
 	-Werror			\
@@ -54,18 +54,19 @@ WARNFLAGS =			\
 	-Wno-pointer-sign	\
 	-Wmissing-include-dirs
 
-CFLAGS = -march=mips64 -mcpu=mips4	\
-	-G0 -O -g -nostdinc -mno-abicalls -msoft-float	\
-	-fwrapv -fno-builtin-printf ${WARNFLAGS} -DWITHOUT_CAPSICUM=1
+CFLAGS = -march=mips64 -mcpu=mips4 -G0 -O -g -nostdinc		\
+	 -mno-abicalls -msoft-float -fwrapv -fno-builtin-printf	\
+	${WARNFLAGS} -DWITHOUT_CAPSICUM=1
 
 all:	compile link binary
 
 llvm-objdump:
 	llvm-objdump-cheri -d ${APP}.elf | less
 
-.include "${.CURDIR}/osfive/mk/user.mk"
-.include "${.CURDIR}/osfive/mk/compile.mk"
-.include "${.CURDIR}/osfive/mk/link.mk"
-.include "${.CURDIR}/osfive/mk/binutils.mk"
-.include "${.CURDIR}/osfive/mk/clean.mk"
-.include "${.CURDIR}/osfive/mk/info.mk"
+.include "${.CURDIR}/osfive/lib/libc/Makefile.inc"
+.include "${.CURDIR}/osfive/mk/bsd.user.mk"
+.include "${.CURDIR}/osfive/mk/bsd.compile.mk"
+.include "${.CURDIR}/osfive/mk/bsd.link.mk"
+.include "${.CURDIR}/osfive/mk/bsd.binutils.mk"
+.include "${.CURDIR}/osfive/mk/bsd.clean.mk"
+.include "${.CURDIR}/osfive/mk/bsd.info.mk"
