@@ -4,9 +4,14 @@ ARCH =		mips
 CC =		clang-cheri
 LD =		ld.lld-cheri
 OBJCOPY =	llvm-objcopy-cheri
-OBJDIR =	obj
 
-LDSCRIPT =	${CURDIR}/ldscript
+OBJDIR = 	obj
+LDSCRIPT_TPL =	${CURDIR}/ldscript.tpl
+LDSCRIPT =	${OBJDIR}/ldscript
+
+DM_BASE_UNCACHED =	0xffffffffb0000000
+DM_BASE_CACHED =	0xffffffff90000000
+DM_BASE ?=		${DM_BASE_UNCACHED}
 
 OBJECTS =	alloc.o						\
 		bhyve/bhyve_support.o				\
@@ -58,8 +63,12 @@ WARNFLAGS =			\
 CFLAGS = -march=mips64 -mcpu=mips4 -G0 -O -g -nostdinc		\
 	 -mno-abicalls -msoft-float -fwrapv -fno-builtin-printf	\
 	${WARNFLAGS} -DWITHOUT_CAPSICUM=1
+CFLAGS += -DDM_BASE=${DM_BASE}
 
 all:	compile link binary
+
+${LDSCRIPT}:
+	sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_TPL} > ${LDSCRIPT}
 
 llvm-objdump:
 	llvm-objdump-cheri -d ${APP}.elf | less
@@ -68,4 +77,6 @@ include ${CURDIR}/osfive/lib/libc/Makefile.inc
 include ${CURDIR}/osfive/mk/gnu.user.mk
 include ${CURDIR}/osfive/mk/gnu.compile.mk
 include ${CURDIR}/osfive/mk/gnu.link.mk
+include ${CURDIR}/osfive/mk/gnu.binutils.mk
 include ${CURDIR}/osfive/mk/gnu.clean.mk
+include ${CURDIR}/osfive/mk/gnu.info.mk
