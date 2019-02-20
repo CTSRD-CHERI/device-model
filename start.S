@@ -42,7 +42,7 @@
 ASM_ENTRY(_start)
 	nop
 	/* Debug */
-	dla	t0, 0xffffffffb0800000
+	dla	t0, (DM_BASE + 0x800000)
 	dli	t1, 0x1212121212131313
 	sd	t1, 0(t0)
 	nop
@@ -53,7 +53,7 @@ ASM_ENTRY(_start)
 	sync
 
 	dla	gp, _gp
-	dla	sp, 0xffffffffb0100000
+	dla	sp, (DM_BASE + 0x100000)
 	nop
 	dla	t0, main
 	jalr	t0

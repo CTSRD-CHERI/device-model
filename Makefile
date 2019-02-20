@@ -5,7 +5,12 @@ CC =		clang-cheri
 LD =		ld.lld-cheri
 OBJCOPY =	llvm-objcopy-cheri
 
-LDSCRIPT =	${.CURDIR}/ldscript
+LDSCRIPT_TPL =	${.CURDIR}/ldscript
+LDSCRIPT =	${.OBJDIR}/ldscript
+
+DM_BASE_UNCACHED =	0xffffffffb0000000
+DM_BASE_CACHED =	0xffffffff90000000
+DM_BASE ?=		${DM_BASE_UNCACHED}
 
 OBJECTS =	alloc.o						\
 		bhyve/bhyve_support.o				\
@@ -57,8 +62,12 @@ WARNFLAGS =			\
 CFLAGS = -march=mips64 -mcpu=mips4 -G0 -O -g -nostdinc		\
 	 -mno-abicalls -msoft-float -fwrapv -fno-builtin-printf	\
 	${WARNFLAGS} -DWITHOUT_CAPSICUM=1
+CFLAGS += -DDM_BASE=${DM_BASE}
 
 all:	compile link binary
+
+${LDSCRIPT}:
+	sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_TPL} > ${LDSCRIPT}
 
 llvm-objdump:
 	llvm-objdump-cheri -d ${APP}.elf | less

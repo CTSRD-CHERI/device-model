@@ -3,12 +3,12 @@ ENTRY(_start)
 
 SECTIONS
 {
-	. = 0xffffffffb0000000;
+	. = __DM_BASE__;
 	.start . : {
 		*start.o(.text)
 	}
 
-	. = 0xffffffffb0001000;
+	. = (__DM_BASE__ + 0x1000);
 	.exception . : {
 		*exception.o(.text)
 	}

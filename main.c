@@ -165,7 +165,7 @@ main(void)
 	clear_bss();
 
 	/* Debug */
-	addr = (uint64_t *)0xffffffffb0800000;
+	addr = (uint64_t *)(DM_BASE + 0x800000);
 	*addr = 0x1515151515161617;
 
 	aju_init(&aju_sc, AJU1_BASE);
