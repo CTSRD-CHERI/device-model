@@ -66,6 +66,8 @@ CFLAGS += -DDM_BASE=${DM_BASE}
 
 all:	compile link binary
 
+.include "${.CURDIR}/osfive/mk/bsd.pre.mk"
+
 ${LDSCRIPT}:
 	sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_TPL} > ${LDSCRIPT}
 
@@ -73,9 +75,4 @@ llvm-objdump:
 	llvm-objdump-cheri -d ${APP}.elf | less
 
 .include "${.CURDIR}/osfive/lib/libc/Makefile.inc"
-.include "${.CURDIR}/osfive/mk/bsd.user.mk"
-.include "${.CURDIR}/osfive/mk/bsd.compile.mk"
-.include "${.CURDIR}/osfive/mk/bsd.link.mk"
-.include "${.CURDIR}/osfive/mk/bsd.binutils.mk"
-.include "${.CURDIR}/osfive/mk/bsd.clean.mk"
-.include "${.CURDIR}/osfive/mk/bsd.info.mk"
+.include "${.CURDIR}/osfive/mk/bsd.post.mk"
