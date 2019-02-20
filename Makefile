@@ -5,7 +5,7 @@ CC =		clang-cheri
 LD =		ld.lld-cheri
 OBJCOPY =	llvm-objcopy-cheri
 
-LDSCRIPT_TPL =	${.CURDIR}/ldscript
+LDSCRIPT_TPL =	${.CURDIR}/ldscript.tpl
 LDSCRIPT =	${.OBJDIR}/ldscript
 
 DM_BASE_UNCACHED =	0xffffffffb0000000
