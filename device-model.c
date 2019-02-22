@@ -175,12 +175,6 @@ dm_loop(struct epw_softc *sc)
 			epw_reply(sc, &req);
 		}
 
-		/*
-		 * TODO: BERI register interface hardware bug
-		 * requires a delay before reply.
-		 */
-		usleep(5000);
-
 		/* Poll mSGDMA TX/RX descriptors. */
 		emul_msgdma_poll(&msgdma0_sc);
 		emul_msgdma_poll(&msgdma1_sc);
