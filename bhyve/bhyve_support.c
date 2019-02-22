@@ -62,7 +62,7 @@ pci_irq_assert(struct pci_devinst *pi)
 {
 	uint64_t addr;
 
-	dprintf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
+	printf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
 
 	addr = BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE;

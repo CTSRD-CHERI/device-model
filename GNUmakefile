@@ -12,7 +12,7 @@ LDSCRIPT =	${OBJDIR}/ldscript
 
 DM_BASE_UNCACHED =	0xffffffffb0000000
 DM_BASE_CACHED =	0xffffffff90000000
-DM_BASE ?=		${DM_BASE_UNCACHED}
+DM_BASE ?=		${DM_BASE_CACHED}
 
 OBJECTS =	alloc.o						\
 		bhyve/bhyve_support.o				\
