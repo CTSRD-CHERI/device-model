@@ -1508,8 +1508,6 @@ e82545_rx_poll(void *arg)
 	sc = arg;
 
 	e82545_tap_callback(0, 0, sc);
-
-	fifo_interrupts_enable(sc->fifo_rx, FIFO_RX_EVENTS);
 }
 
 void
