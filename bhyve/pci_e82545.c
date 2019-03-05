@@ -32,6 +32,7 @@
 #include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/endian.h>
+#include <sys/callout.h>
 
 #include <sys/errno.h>
 #include <sys/types.h>
@@ -364,6 +365,7 @@ struct e82545_softc {
 	/* Device-model data */
 	struct altera_fifo_softc *fifo_tx;
 	struct altera_fifo_softc *fifo_rx;
+	struct callout mevpitr_callout;
 };
 
 struct e82545_softc *e82545_sc;
@@ -588,6 +590,31 @@ e82545_itr_callback(int fd, enum ev_type type, void *param)
 	}
 	pthread_mutex_unlock(&sc->esc_mtx);
 }
+#else
+void
+e82545_itr_callback(void *arg)
+{
+	struct e82545_softc *sc;
+	uint32_t new;
+
+	sc = arg;
+
+	pthread_mutex_lock(&sc->esc_mtx);
+	new = sc->esc_ICR & sc->esc_IMS;
+	if (new && !sc->esc_irq_asserted) {
+		DPRINTF("itr callback: lintr assert %x\r\n", new);
+		sc->esc_irq_asserted = 1;
+		pci_lintr_assert(sc->esc_pi);
+
+		callout_init(&sc->mevpitr_callout);
+		callout_reset(&sc->mevpitr_callout,
+		    ((sc->esc_ITR + 3905) / 3906) * 1000, /* 256ns -> 1ms */
+		    e82545_itr_callback, sc);
+	} else {
+		sc->esc_mevpitr = NULL;
+	}
+	pthread_mutex_unlock(&sc->esc_mtx);
+}
 #endif
 
 static void
@@ -613,13 +640,20 @@ e82545_icr_assert(struct e82545_softc *sc, uint32_t bits)
 		DPRINTF("icr assert: lintr assert %x\r\n", new);
 		sc->esc_irq_asserted = 1;
 		pci_lintr_assert(sc->esc_pi);
-#if 0
 		if (sc->esc_ITR != 0) {
+			sc->esc_mevpitr = (void *)1;
+			callout_init(&sc->mevpitr_callout);
+			callout_reset(&sc->mevpitr_callout,
+			    ((sc->esc_ITR + 3905) / 3906) * 1000,
+						/* 256ns -> 1ms */
+			    e82545_itr_callback, sc);
+
+#if 0
 			sc->esc_mevpitr = mevent_add(
 			    (sc->esc_ITR + 3905) / 3906,  /* 256ns -> 1ms */
 			    EVF_TIMER, e82545_itr_callback, sc);
-		}
 #endif
+		}
 	}
 }
 
@@ -643,13 +677,20 @@ e82545_ims_change(struct e82545_softc *sc, uint32_t bits)
 		DPRINTF("ims change: lintr assert %x\n\r", new);
 		sc->esc_irq_asserted = 1;
 		pci_lintr_assert(sc->esc_pi);
-#if 0
 		if (sc->esc_ITR != 0) {
+			sc->esc_mevpitr = (void *)1;
+			callout_init(&sc->mevpitr_callout);
+			callout_reset(&sc->mevpitr_callout,
+			    ((sc->esc_ITR + 3905) / 3906) * 1000,
+							/* 256ns -> 1ms */
+			    e82545_itr_callback, sc);
+
+#if 0
 			sc->esc_mevpitr = mevent_add(
 			    (sc->esc_ITR + 3905) / 3906,  /* 256ns -> 1ms */
 			    EVF_TIMER, e82545_itr_callback, sc);
-		}
 #endif
+		}
 	}
 }
 
