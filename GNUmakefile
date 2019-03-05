@@ -43,7 +43,8 @@ OBJECTS =	alloc.o						\
 		osfive/sys/mips/mips/machdep.o			\
 		osfive/sys/mips/mips/timer.o			\
 		osfive/sys/mips/mips/trap.o			\
-		start.o
+		start.o						\
+		test.o
 
 LIBRARIES = LIBC
 
