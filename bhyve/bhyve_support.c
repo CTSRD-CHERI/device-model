@@ -62,7 +62,7 @@ pci_irq_assert(struct pci_devinst *pi)
 {
 	uint64_t addr;
 
-	printf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
+	dprintf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
 
 	addr = BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE;
@@ -76,9 +76,17 @@ pci_irq_assert(struct pci_devinst *pi)
 void
 pci_irq_deassert(struct pci_devinst *pi)
 {
+	uint64_t addr;
 
 	dprintf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
+
+	addr = BERIPIC0_IP_CLEAR | MIPS_XKPHYS_UNCACHED_BASE;
+
+	if (strcmp(pi->pi_name, "ahci-hd-pci-1") == 0)
+		*(volatile uint64_t *)(addr) = (1 << DM_AHCI_INTR);
+	else if (strcmp(pi->pi_name, "e1000-pci-0") == 0)
+		*(volatile uint64_t *)(addr) = (1 << DM_E1000_INTR);
 }
 
 int
