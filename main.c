@@ -139,8 +139,13 @@ udelay(uint32_t usec)
 void
 usleep(uint32_t usec)
 {
+	struct callout c;
 
-	mips_timer_usleep(&timer_sc, usec);
+	callout_init(&c);
+	callout_reset(&c, usec, NULL, NULL);
+
+	while (c.state == 0)
+		__asm __volatile("wait");
 }
 
 static void
@@ -177,14 +182,14 @@ main(void)
 	beripic_install_intr_map(&beripic_sc, beripic_intr_map);
 	beripic_enable(&beripic_sc, 16, 0);
 
+	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ);
+
 	status = mips_rd_status();
 	status |= MIPS_SR_IM_HARD(0);
 	status |= MIPS_SR_IM_HARD(5);
 	status |= MIPS_SR_IE;
 	status &= ~MIPS_SR_BEV;
 	mips_wr_status(status);
-
-	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ);
 
 	epw_init(&epw_sc, EPW_BASE, EPW_WINDOW);
 	epw_control(&epw_sc, 1);
