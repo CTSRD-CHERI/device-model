@@ -161,18 +161,21 @@ void
 dm_loop(struct epw_softc *sc)
 {
 	struct epw_request req;
+	int intr;
 	int ret;
 
 	printf("%s: enter\n", __func__);
 
 	while (1) {
 		if (epw_request(sc, &req) != 0) {
+			intr = intr_disable();
 			if (req_count++ % 500 == 0)
 				printf("%s: req count %d\n",
 				    __func__, req_count);
 
 			ret = dm_request(sc, &req);
 			epw_reply(sc, &req);
+			intr_restore(intr);
 		}
 
 		/* Poll mSGDMA TX/RX descriptors. */
