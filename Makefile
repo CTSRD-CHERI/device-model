@@ -31,6 +31,7 @@ OBJECTS =	alloc.o						\
 		osfive/sys/dev/altera/jtag_uart/jtag_uart.o	\
 		osfive/sys/kern/kern_malloc_fl.o		\
 		osfive/sys/kern/kern_panic.o			\
+		osfive/sys/kern/kern_timeout.o			\
 		osfive/sys/kern/subr_console.o			\
 		osfive/sys/kern/subr_prf.o			\
 		osfive/sys/mips/beri/beripic.o			\
