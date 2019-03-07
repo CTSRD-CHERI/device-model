@@ -50,7 +50,7 @@ This enables peripheral window (register interface).
 
     $ nios2-terminal -i 2
 
-### Emulate mSGMDA
+### To emulate Altera mSGMDA:
     $ devctl disable atse1
     $ devctl disable msgdma2
     $ devctl disable msgdma3
@@ -60,9 +60,11 @@ This enables peripheral window (register interface).
     $ devctl enable atse1
     $ ifconfig atse1 10.4.0.2/24
 
-### Emulate PCI
+### To emulate PCIe bus and connected devices:
     $ devctl disable pci0
     $ devctl enable pci0
+
+Note: both mSGMDA and e1000 PCI-e device use the same Altera FIFO, which means emulating both of them same time leads to undefined behaviour.
 
 ### Example device-tree node for PCI-e device
 ```
