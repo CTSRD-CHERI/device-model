@@ -52,6 +52,7 @@
 #include "fwd_device.h"
 #include "emul.h"
 #include "emul_msgdma.h"
+#include "test.h"
 
 struct beripic_resource beripic1_res = {
 	.cfg = BERIPIC1_CFG,
