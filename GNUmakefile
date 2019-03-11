@@ -14,7 +14,7 @@ DM_BASE_UNCACHED =	0xffffffffb0000000
 DM_BASE_CACHED =	0xffffffff90000000
 DM_BASE ?=		${DM_BASE_CACHED}
 
-OBJECTS =	alloc.o						\
+OBJECTS =							\
 		bhyve/bhyve_support.o				\
 		bhyve/block_if.o				\
 		bhyve/mem.o					\
@@ -31,6 +31,7 @@ OBJECTS =	alloc.o						\
 		osfive/lib/md5/md5.o				\
 		osfive/sys/dev/altera/fifo/fifo.o		\
 		osfive/sys/dev/altera/jtag_uart/jtag_uart.o	\
+		osfive/sys/kern/kern_malloc.o			\
 		osfive/sys/kern/kern_malloc_fl.o		\
 		osfive/sys/kern/kern_panic.o			\
 		osfive/sys/kern/kern_timeout.o			\
