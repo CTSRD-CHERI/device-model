@@ -37,6 +37,7 @@ OBJECTS =							\
 		osfive/sys/kern/kern_timeout.o			\
 		osfive/sys/kern/subr_console.o			\
 		osfive/sys/kern/subr_prf.o			\
+		osfive/sys/kern/subr_usleep.o			\
 		osfive/sys/mips/beri/beripic.o			\
 		osfive/sys/mips/beri/beri_epw.o			\
 		osfive/sys/mips/mips/cache_mipsNN.o		\
