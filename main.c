@@ -138,18 +138,6 @@ udelay(uint32_t usec)
 	mips_timer_udelay(&timer_sc, usec);
 }
 
-void
-usleep(uint32_t usec)
-{
-	struct callout c;
-
-	callout_init(&c);
-	callout_reset(&c, usec, NULL, NULL);
-
-	while (c.state == 0)
-		__asm __volatile("wait");
-}
-
 static void
 clear_bss(void)
 {
