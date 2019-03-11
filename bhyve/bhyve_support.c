@@ -33,7 +33,6 @@
 
 #include <sys/cdefs.h>
 #include <sys/malloc.h>
-#include <sys/lock.h>
 
 #include <mips/beri/beri_epw.h>
 
