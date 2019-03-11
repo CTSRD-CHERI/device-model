@@ -141,11 +141,10 @@ dm_init(struct epw_softc *sc)
 	msgdma1_sc.unit = 1;
 	msgdma1_sc.fifo_sc = &fifo1_sc;
 
+	malloc_init();
 	malloc_base = DM_BASE + 0x01000000/2;
 	malloc_size = 0x01000000/2;
-
-	fl_init();
-	fl_add_region(malloc_base, malloc_size);
+	malloc_add_region(malloc_base, malloc_size);
 
 	emul_pci_init(&pci0_sc);
 	req_count = 0;
