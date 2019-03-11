@@ -39,6 +39,7 @@
 #include <machine/frame.h>
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
+#include <machine/machdep.h>
 
 #include <mips/mips/timer.h>
 #include <mips/beri/beripic.h>
@@ -169,6 +170,8 @@ main(void)
 	uint32_t status;
 
 	clear_bss();
+
+	md_init();
 
 	/* Debug */
 	addr = (uint64_t *)(DM_BASE + 0x800000);
