@@ -59,13 +59,23 @@ free(void *ptr)
 void *
 calloc(size_t number, size_t size)
 {
+	void *ret;
 
-	return (fl_calloc(number, size));
+	spinlock_enter();
+	ret = fl_calloc(number, size);
+	spinlock_exit();
+
+	return (ret);
 }
 
 void *
 realloc(void *ptr, size_t size)
 {
+	void *ret;
 
-	return (fl_realloc(ptr, size));
+	spinlock_enter();
+	ret = fl_realloc(ptr, size);
+	spinlock_exit();
+
+	return (ret);
 }
