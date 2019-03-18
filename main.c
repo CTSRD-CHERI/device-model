@@ -34,12 +34,12 @@
 #include <sys/cdefs.h>
 #include <sys/console.h>
 #include <sys/endian.h>
+#include <sys/thread.h>
 #include <sys/systm.h>
 
 #include <machine/frame.h>
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
-#include <machine/machdep.h>
 
 #include <mips/mips/timer.h>
 #include <mips/beri/beripic.h>

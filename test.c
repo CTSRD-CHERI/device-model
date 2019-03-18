@@ -44,7 +44,7 @@ callout_done(void *arg)
 	printf("done %p\n", arg);
 
 	callout_init(&c0);
-	callout_reset(&c0, 1000000, callout_done, (void *)0);
+	callout_reset(&c0, 100000000, callout_done, (void *)0);
 }
 
 void
@@ -55,7 +55,7 @@ test_callout(void)
 	printf("Scheduling an 1 sec timeout\n");
 
 	callout_init(&c0);
-	callout_reset(&c0, 1000000, callout_done, (void *)0);
+	callout_reset(&c0, 100000000, callout_done, (void *)0);
 
 	printf("Starting test code loop\n");
 
@@ -63,7 +63,7 @@ test_callout(void)
 
 	while (1) {
 		printf("Sleep %d msec\n", i);
-		usleep(i * 1000);
+		raw_sleep(i * 1000000);
 		printf("Sleep %d msec done\n", i);
 		i += 1;
 	}

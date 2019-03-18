@@ -27,26 +27,14 @@ OBJECTS =							\
 		main.o						\
 		osfive/lib/libc/gen/assert.o			\
 		osfive/lib/md5/md5.o				\
-		osfive/sys/dev/altera/fifo/fifo.o		\
-		osfive/sys/dev/altera/jtag_uart/jtag_uart.o	\
-		osfive/sys/kern/kern_malloc.o			\
-		osfive/sys/kern/kern_malloc_fl.o		\
-		osfive/sys/kern/kern_panic.o			\
-		osfive/sys/kern/kern_timeout.o			\
-		osfive/sys/kern/subr_console.o			\
-		osfive/sys/kern/subr_prf.o			\
-		osfive/sys/kern/subr_usleep.o			\
 		osfive/sys/mips/beri/beripic.o			\
 		osfive/sys/mips/beri/beri_epw.o			\
-		osfive/sys/mips/mips/cache_mipsNN.o		\
-		osfive/sys/mips/mips/exception.o		\
-		osfive/sys/mips/mips/machdep.o			\
-		osfive/sys/mips/mips/timer.o			\
-		osfive/sys/mips/mips/trap.o			\
+		osfive/sys/dev/altera/fifo/fifo.o		\
+		osfive/sys/dev/altera/jtag_uart/jtag_uart.o	\
 		start.o						\
 		test.o
 
-LIBRARIES = LIBC
+LIBRARIES = KERN MIPS LIBC
 
 WARNFLAGS =			\
 	-Werror			\
@@ -79,5 +67,6 @@ llvm-objdump:
 clean: __clean
 	rm -f ${LDSCRIPT}
 
+.include "${.CURDIR}/osfive/lib/kern/Makefile.inc"
 .include "${.CURDIR}/osfive/lib/libc/Makefile.inc"
 .include "${.CURDIR}/osfive/mk/bsd.mk"
