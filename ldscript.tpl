@@ -22,13 +22,13 @@ SECTIONS
 		*(.rodata)
 	}
 
+	/* Ensure _smem is associated with the next section */
+	. = .;
+	_smem = ABSOLUTE(.);
 	.data : {
+		_sdata = ABSOLUTE(.);
 		*(.data)
-	}
-
-	.sdata : {
-		_gp = .;
-		*(.sdata)
+		_edata = ABSOLUTE(.);
 	}
 
 	.bss : {

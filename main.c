@@ -67,9 +67,6 @@ static struct beripic_softc beripic_sc;
 static struct epw_softc epw_sc;
 static struct mips_timer_softc timer_sc;
 
-extern uint32_t _sbss;
-extern uint32_t _ebss;
-
 extern struct altera_fifo_softc fifo0_sc;
 extern struct altera_fifo_softc fifo1_sc;
 
@@ -138,26 +135,11 @@ udelay(uint32_t usec)
 	mips_timer_udelay(&timer_sc, usec);
 }
 
-static void
-clear_bss(void)
-{
-	uint32_t *sbss;
-	uint32_t *ebss;
-
-	sbss = (uint32_t *)&_sbss;
-	ebss = (uint32_t *)&_ebss;
-
-	while (sbss < ebss)
-		*sbss++ = 0;
-}
-
 int
 main(void)
 {
 	uint64_t *addr;
 	uint32_t status;
-
-	clear_bss();
 
 	md_init();
 
