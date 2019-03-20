@@ -141,6 +141,8 @@ main(void)
 	uint64_t *addr;
 	uint32_t status;
 
+	zero_bss();
+	relocate_data();
 	md_init();
 
 	/* Debug */
