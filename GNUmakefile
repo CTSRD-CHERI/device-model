@@ -6,7 +6,6 @@ LD =		ld.lld-cheri
 OBJCOPY =	llvm-objcopy-cheri
 
 OBJDIR =	${CURDIR}/obj
-
 LDSCRIPT_TPL =	${CURDIR}/ldscript.tpl
 LDSCRIPT =	${OBJDIR}/ldscript
 
@@ -30,14 +29,13 @@ OBJECTS =							\
 		${OBJDIR}/start.o				\
 		${OBJDIR}/test.o				\
 		${OSOBJDIR}/lib/libc/gen/assert.o		\
-		${OSOBJDIR}/lib/md5/md5.o			\
 		${OSOBJDIR}/sys/dev/altera/fifo/fifo.o		\
 		${OSOBJDIR}/sys/dev/altera/jtag_uart/jtag_uart.o\
 		${OSOBJDIR}/sys/mips/beri/beripic.o		\
 		${OSOBJDIR}/sys/mips/beri/beri_epw.o		\
 
 KERNEL = malloc mips_cache
-LIBRARIES = libc
+LIBRARIES = md5 libc
 
 WARNFLAGS =			\
 	-Werror			\
@@ -56,8 +54,7 @@ WARNFLAGS =			\
 
 CFLAGS = -march=mips64 -mcpu=mips4 -G0 -O -g -nostdinc		\
 	 -mno-abicalls -msoft-float -fwrapv -fno-builtin-printf	\
-	${WARNFLAGS} -DWITHOUT_CAPSICUM=1
-CFLAGS += -DDM_BASE=${DM_BASE}
+	${WARNFLAGS} -DWITHOUT_CAPSICUM=1 -DDM_BASE=${DM_BASE}
 
 all:	_compile _link _binary
 
@@ -70,5 +67,6 @@ llvm-objdump:
 clean: _clean
 	rm -f ${LDSCRIPT}
 
+include ${CURDIR}/osfive/lib/md5/Makefile.inc
 include ${CURDIR}/osfive/lib/libc/Makefile.inc
 include ${CURDIR}/osfive/mk/gnu.mk
