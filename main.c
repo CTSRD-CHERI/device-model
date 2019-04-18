@@ -142,7 +142,6 @@ main(void)
 	uint32_t status;
 
 	zero_bss();
-	relocate_data();
 	md_init();
 
 	/* Debug */
