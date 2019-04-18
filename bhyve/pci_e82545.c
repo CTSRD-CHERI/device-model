@@ -59,6 +59,7 @@
 #include "pci_e82545.h"
 #include "mevent.h"
 
+#include "device-model.h"
 #include "bhyve_support.h"
 #include "pthread.h"
 #include <dev/altera/fifo/fifo.h>
@@ -607,8 +608,9 @@ e82545_itr_callback(void *arg)
 		pci_lintr_assert(sc->esc_pi);
 
 		callout_init(&sc->mevpitr_callout);
-		callout_reset(&sc->mevpitr_callout,
-		    ((sc->esc_ITR + 3905) / 3906) * 1000, /* 256ns -> 1ms */
+		callout_set(&sc->mevpitr_callout,
+				/* 256ns -> 1ms */
+		    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 1000),
 		    e82545_itr_callback, sc);
 	} else {
 		sc->esc_mevpitr = NULL;
@@ -643,9 +645,9 @@ e82545_icr_assert(struct e82545_softc *sc, uint32_t bits)
 		if (sc->esc_ITR != 0) {
 			sc->esc_mevpitr = (void *)1;
 			callout_init(&sc->mevpitr_callout);
-			callout_reset(&sc->mevpitr_callout,
-			    ((sc->esc_ITR + 3905) / 3906) * 1000,
-						/* 256ns -> 1ms */
+			callout_set(&sc->mevpitr_callout,
+					/* 256ns -> 1ms */
+			    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 1000),
 			    e82545_itr_callback, sc);
 
 #if 0
@@ -680,9 +682,9 @@ e82545_ims_change(struct e82545_softc *sc, uint32_t bits)
 		if (sc->esc_ITR != 0) {
 			sc->esc_mevpitr = (void *)1;
 			callout_init(&sc->mevpitr_callout);
-			callout_reset(&sc->mevpitr_callout,
-			    ((sc->esc_ITR + 3905) / 3906) * 1000,
-							/* 256ns -> 1ms */
+			callout_set(&sc->mevpitr_callout,
+					/* 256ns -> 1ms */
+			    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 1000),
 			    e82545_itr_callback, sc);
 
 #if 0

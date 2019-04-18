@@ -34,6 +34,8 @@
 #ifndef	_DEVICE_MODEL_H_
 #define	_DEVICE_MODEL_H_
 
+#include <mips/beri/beri_epw.h>
+
 #define	AJU0_BASE		0x7f000000
 #define	AJU1_BASE		0x7f001000
 #define	AJU2_BASE		0x7f002000
@@ -80,6 +82,7 @@
 #define	BERIPIC1_IP_CLEAR	0x7f80a100
 
 #define	MIPS_DEFAULT_FREQ	100000000 /* 100 MHz */
+#define	USEC_TO_TICKS(n)	((n) * 100)
 
 void cpu_reset(void);
 
