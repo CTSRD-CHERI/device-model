@@ -21,7 +21,7 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
     $ sudo pkg install llvm-cheri
     $ git clone --recursive https://github.com/CTSRD-CHERI/device-model
     $ cd device-model
-    $ make
+    $ gmake
 
 ### Boot FreeBSD kernel on a 1st core of BERI system
 
