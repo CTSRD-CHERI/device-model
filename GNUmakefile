@@ -26,11 +26,11 @@ OBJECTS =							\
 		emul_pci.o					\
 		fwd_device.o					\
 		main.o						\
-		osfive/lib/libc/gen/assert.o			\
-		osfive/sys/dev/altera/fifo/fifo.o		\
-		osfive/sys/dev/altera/jtag_uart/jtag_uart.o	\
-		osfive/sys/mips/beri/beripic.o			\
-		osfive/sys/mips/beri/beri_epw.o			\
+		${OSDIR}/lib/libc/gen/assert.o			\
+		${OSDIR}/sys/dev/altera/fifo/fifo.o		\
+		${OSDIR}/sys/dev/altera/jtag_uart/jtag_uart.o	\
+		${OSDIR}/sys/mips/beri/beripic.o		\
+		${OSDIR}/sys/mips/beri/beri_epw.o		\
 		start.o						\
 		test.o						\
 
