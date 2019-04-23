@@ -67,6 +67,4 @@ llvm-objdump:
 clean: _clean
 	rm -f ${LDSCRIPT}
 
-include ${CURDIR}/osfive/lib/md5/Makefile.inc
-include ${CURDIR}/osfive/lib/libc/Makefile.inc
-include ${CURDIR}/osfive/mk/gnu.mk
+include ${CURDIR}/osfive/mk/default.mk
