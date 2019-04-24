@@ -26,13 +26,13 @@ OBJECTS =							\
 		emul_pci.o					\
 		fwd_device.o					\
 		main.o						\
+		start.o						\
+		test.o						\
 		${OSDIR}/lib/libc/gen/assert.o			\
 		${OSDIR}/sys/dev/altera/fifo/fifo.o		\
 		${OSDIR}/sys/dev/altera/jtag_uart/jtag_uart.o	\
 		${OSDIR}/sys/mips/beri/beripic.o		\
 		${OSDIR}/sys/mips/beri/beri_epw.o		\
-		start.o						\
-		test.o						\
 
 KERNEL = malloc mips_cache
 LIBRARIES = md5 libc
@@ -59,7 +59,7 @@ CFLAGS = -march=mips64 -mcpu=mips4 -G0 -O -g -nostdinc		\
 all:	_compile _link _binary
 
 ${LDSCRIPT}:
-	sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_TPL} > ${LDSCRIPT}
+	@sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_TPL} > ${LDSCRIPT}
 
 llvm-objdump:
 	llvm-objdump-cheri -d ${APP}.elf | less
