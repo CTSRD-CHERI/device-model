@@ -5,7 +5,7 @@ CC =		clang-cheri
 LD =		ld.lld-cheri
 OBJCOPY =	llvm-objcopy-cheri
 
-OBJDIR =	${CURDIR}/obj
+OBJDIR =	obj
 LDSCRIPT_TPL =	${CURDIR}/ldscript.tpl
 LDSCRIPT =	${OBJDIR}/ldscript
 
