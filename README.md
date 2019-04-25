@@ -16,6 +16,16 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
     $ make -j4 TARGET=mips TARGET_ARCH=mips64 buildworld
     $ make -j4 TARGET=mips TARGET_ARCH=mips64 KERNCONF=BERI_DE4_USBROOT buildkernel
 
+### Make rootfs if you don't have one
+    $ make -j4 TARGET=mips TARGET_ARCH=mips64 -DNO_ROOT DESTDIR=${HOME}/world-mips64 installworld
+    $ cd ${HOME}/world-mips64
+    $ echo 'hostname="mips64"' >> etc/rc.conf
+    $ echo 'sendmail_enable="NONE"' >> etc/rc.conf
+    $ echo 'cron_enable="NO"' >> etc/rc.conf
+    $ echo "/dev/da0  /       ufs     ro      1       1" > etc/fstab
+    $ echo "./etc/fstab type=file uname=root gname=wheel mode=0644" >> METALOG
+    $ echo "./etc/rc.conf type=file uname=root gname=wheel mode=0644" >> METALOG    $ makefs -B big -D -f 30000 -o version=2 -s 1200m mips64.img METALOG
+
 ### Build device-model under FreeBSD
 
     $ sudo pkg install llvm-cheri
