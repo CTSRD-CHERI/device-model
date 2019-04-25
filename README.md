@@ -16,7 +16,7 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
     $ make -j4 TARGET=mips TARGET_ARCH=mips64 buildworld
     $ make -j4 TARGET=mips TARGET_ARCH=mips64 KERNCONF=BERI_DE4_USBROOT buildkernel
 
-### Make rootfs if you don't have one
+### Make rootfs image if you don't have one
     $ make -j4 TARGET=mips TARGET_ARCH=mips64 -DNO_ROOT DESTDIR=${HOME}/world-mips64 installworld
     $ cd ${HOME}/world-mips64
     $ echo 'hostname="mips64"' >> etc/rc.conf
