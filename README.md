@@ -24,7 +24,8 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
     $ echo 'cron_enable="NO"' >> etc/rc.conf
     $ echo "/dev/da0  /       ufs     ro      1       1" > etc/fstab
     $ echo "./etc/fstab type=file uname=root gname=wheel mode=0644" >> METALOG
-    $ echo "./etc/rc.conf type=file uname=root gname=wheel mode=0644" >> METALOG    $ makefs -B big -D -f 30000 -o version=2 -s 1200m mips64.img METALOG
+    $ echo "./etc/rc.conf type=file uname=root gname=wheel mode=0644" >> METALOG
+    $ makefs -B big -D -f 30000 -o version=2 -s 1200m mips64.img METALOG
 
 ### Build device-model under FreeBSD
 
