@@ -4,6 +4,7 @@ MACHINE =	mips
 CC =		clang-cheri
 LD =		ld.lld-cheri
 OBJCOPY =	llvm-objcopy-cheri
+SIZE =		llvm-size60
 
 OBJDIR =	obj
 LDSCRIPT_TPL =	${CURDIR}/ldscript.tpl
@@ -56,7 +57,7 @@ CFLAGS = -march=mips64 -mcpu=mips4 -G0 -O -g -nostdinc		\
 	 -mno-abicalls -msoft-float -fwrapv -fno-builtin-printf	\
 	${WARNFLAGS} -DWITHOUT_CAPSICUM=1 -DDM_BASE=${DM_BASE}
 
-all:	_compile _link _binary
+all:	${OBJDIR}/${APP}.bin
 
 ${LDSCRIPT}:
 	@sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_TPL} > ${LDSCRIPT}
@@ -64,7 +65,9 @@ ${LDSCRIPT}:
 llvm-objdump:
 	llvm-objdump-cheri -d ${APP}.elf | less
 
-clean: _clean
-	rm -f ${LDSCRIPT}
+clean:
+	@rm -f ${LDSCRIPT} ${OBJECTS}
 
+include ${CURDIR}/osfive/lib/libc/Makefile.inc
+include ${CURDIR}/osfive/lib/md5/Makefile.inc
 include ${CURDIR}/osfive/mk/default.mk
