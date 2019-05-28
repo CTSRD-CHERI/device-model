@@ -125,6 +125,8 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 
 	KASSERT(elink->type == PCI_GENERIC, ("Unknown device"));
 
+	dprintf("%s: req->addr %lx, base_emul %lx, epw_window %lx\n",
+	    __func__, req->addr, elink->base_emul, EPW_WINDOW);
 	offset = req->addr - elink->base_emul - EPW_WINDOW;
 
 	error = emul_mem(sc, req, offset);
