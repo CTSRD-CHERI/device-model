@@ -36,6 +36,7 @@
 #include <sys/endian.h>
 #include <sys/thread.h>
 #include <sys/systm.h>
+#include <sys/malloc.h>
 
 #include <machine/frame.h>
 #include <machine/cpuregs.h>
@@ -136,13 +137,12 @@ udelay(uint32_t usec)
 }
 
 int
-main(void)
+app_init(void)
 {
+	uintptr_t malloc_base;
+	int malloc_size;
 	uint64_t *addr;
 	uint32_t status;
-
-	zero_bss();
-	md_init();
 
 	/* Debug */
 	addr = (uint64_t *)(DM_BASE + 0x800000);
@@ -172,8 +172,25 @@ main(void)
 	/* RX FIFO interrupt enable */
 	beripic_enable(&beripic_sc, FIFO3_INTR, 0 /* hard IRQ */);
 
+	printf("%s: Initializing malloc\n", __func__);
+	malloc_init();
+	malloc_base = DM_BASE + 0x01000000/2;
+	malloc_size = 0x01000000/2;
+	malloc_add_region(malloc_base, malloc_size);
+
+	return (0);
+}
+
+int
+main(void)
+{
+
+	printf("%s\n", __func__);
+
 	dm_init(&epw_sc);
 	dm_loop(&epw_sc);
+
+	panic("dm_loop returned");
 
 	return (0);
 }

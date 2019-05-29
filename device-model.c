@@ -125,9 +125,9 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 void
 dm_init(struct epw_softc *sc)
 {
-	uintptr_t malloc_base;
-	int malloc_size;
 	int error;
+
+	printf("%s\n", __func__);
 
 	fifo0_sc.fifo_base_mem = FIFO2_BASE_MEM;
 	fifo0_sc.fifo_base_ctrl = FIFO2_BASE_CTRL;
@@ -140,11 +140,6 @@ dm_init(struct epw_softc *sc)
 	fifo1_sc.unit = 1;
 	msgdma1_sc.unit = 1;
 	msgdma1_sc.fifo_sc = &fifo1_sc;
-
-	malloc_init();
-	malloc_base = DM_BASE + 0x01000000/2;
-	malloc_size = 0x01000000/2;
-	malloc_add_region(malloc_base, malloc_size);
 
 	emul_pci_init(&pci0_sc);
 	req_count = 0;
