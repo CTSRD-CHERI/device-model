@@ -52,10 +52,25 @@ ASM_ENTRY(_start)
 	sync
 	sync
 
-	dla	gp, _gp
+	/* Zero BSS */
+	li	t2, 0
+	dla	t0, _sbss
+	nop
+	dla	t1, _ebss
+	nop
+1:
+	beq	t0, t1, 2f
+	nop
+	sb	t2, 0(t0)
+	addi	t0, t0, 1
+	j	1b
+	nop
+2:
+
 	dla	sp, (DM_BASE + 0x100000)
 	nop
-	dla	t0, main
+	li	a0, 0
+	dla	t0, md_init
 	jalr	t0
 	nop
 
