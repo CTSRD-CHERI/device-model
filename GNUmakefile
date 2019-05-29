@@ -35,7 +35,7 @@ OBJECTS =							\
 		${OSDIR}/sys/mips/beri/beripic.o		\
 		${OSDIR}/sys/mips/beri/beri_epw.o		\
 
-KERNEL = malloc mips_cache
+KERNEL = malloc mips_cache sched
 LIBRARIES = md5 libc
 
 WARNFLAGS =			\
@@ -55,7 +55,8 @@ WARNFLAGS =			\
 
 CFLAGS = -march=mips64 -mcpu=mips4 -G0 -O -g -nostdinc		\
 	 -mno-abicalls -msoft-float -fwrapv -fno-builtin-printf	\
-	${WARNFLAGS} -DWITHOUT_CAPSICUM=1 -DDM_BASE=${DM_BASE}
+	${WARNFLAGS} -DWITHOUT_CAPSICUM=1 -DDM_BASE=${DM_BASE}	\
+	-DCONFIG_SCHED
 
 all:	${OBJDIR}/${APP}.bin
 
