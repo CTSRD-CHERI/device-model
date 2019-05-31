@@ -18,6 +18,7 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
 
 ### Make rootfs image if you don't have one
     $ make -j4 TARGET=mips TARGET_ARCH=mips64 -DNO_ROOT DESTDIR=${HOME}/world-mips64 installworld
+    $ make -j4 TARGET=mips TARGET_ARCH=mips64 -DNO_ROOT DESTDIR=${HOME}/world-mips64 distribution
     $ cd ${HOME}/world-mips64
     $ echo 'hostname="mips64"' >> etc/rc.conf
     $ echo 'sendmail_enable="NONE"' >> etc/rc.conf
