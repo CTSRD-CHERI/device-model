@@ -7,6 +7,7 @@ OBJCOPY =	llvm-objcopy-cheri
 SIZE =		llvm-size60
 
 OBJDIR =	obj
+OSDIR =		mdepx
 LDSCRIPT_TPL =	${CURDIR}/ldscript.tpl
 LDSCRIPT =	${OBJDIR}/ldscript
 
@@ -69,6 +70,6 @@ llvm-objdump:
 clean:
 	@rm -f ${LDSCRIPT} ${OBJECTS}
 
-include ${CURDIR}/osfive/lib/libc/Makefile.inc
-include ${CURDIR}/osfive/lib/md5/Makefile.inc
-include ${CURDIR}/osfive/mk/default.mk
+include ${OSDIR}/lib/libc/Makefile.inc
+include ${OSDIR}/lib/md5/Makefile.inc
+include ${OSDIR}/mk/default.mk
