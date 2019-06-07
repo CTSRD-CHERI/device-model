@@ -157,7 +157,8 @@ app_init(void)
 	beripic_install_intr_map(&beripic_sc, beripic_intr_map);
 	beripic_enable(&beripic_sc, 16, 0);
 
-	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ);
+	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ,
+	    USEC_TO_TICKS(1));
 
 	status = mips_rd_status();
 	status |= MIPS_SR_IM_HARD(0);
