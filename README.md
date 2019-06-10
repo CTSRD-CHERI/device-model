@@ -20,6 +20,9 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
     $ make -j4 TARGET=mips TARGET_ARCH=mips64 -DNO_ROOT DESTDIR=${HOME}/world-mips64 installworld
     $ make -j4 TARGET=mips TARGET_ARCH=mips64 -DNO_ROOT DESTDIR=${HOME}/world-mips64 distribution
     $ cd ${HOME}/world-mips64
+    $ echo '# Altera JTAG UART' >> etc/ttys
+    $ echo 'ttyj0 "/usr/libexec/getty std.115200" xterm on secure' >> etc/ttys
+    $ echo 'ttyj1 "/usr/libexec/getty std.115200" xterm on secure' >> etc/ttys
     $ echo 'hostname="mips64"' >> etc/rc.conf
     $ echo 'sendmail_enable="NONE"' >> etc/rc.conf
     $ echo 'cron_enable="NO"' >> etc/rc.conf
