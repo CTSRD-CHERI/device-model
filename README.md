@@ -122,6 +122,7 @@ device		ahci
 | 0x10000000 | 0x20000000 | 256 MB | Reserved by FreeBSD for device-model |
 | 0x10000000 | 0x10800000 |   8 MB | device-model static data             |
 | 0x10800000 | 0x11000000 |   8 MB | device-model malloc()                |
-| 0x11000000 | 0x20000000 | 240 MB | AHCI SATA device memory block        |
+| 0x11000000 | 0x13000000 |  32 MB | free space                           |
+| 0x13000000 | 0x20000000 | 208 MB | AHCI SATA device memory block        |
 
 ![alt text](https://raw.githubusercontent.com/CTSRD-CHERI/device-model/master/images/de4.jpg)

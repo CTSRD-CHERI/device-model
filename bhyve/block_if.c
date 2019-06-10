@@ -364,8 +364,8 @@ blockif_open(const char *optstr, const char *ident)
 	bc->bc_isgeom = geom;
 	bc->bc_candelete = candelete;
 	bc->bc_rdonly = ro;
-	bc->bc_base = DM_BASE + 0x1000000;
-	bc->bc_size = 0xf000000;
+	bc->bc_base = DM_BASE + 0x03000000;
+	bc->bc_size = 0x0d000000;
 	bc->bc_sectsz = sectsz;
 	bc->bc_psectsz = psectsz;
 	bc->bc_psectoff = psectoff;
