@@ -165,6 +165,9 @@ app_init(void)
 	status |= MIPS_SR_IM_HARD(5);
 	status |= MIPS_SR_IE;
 	status &= ~MIPS_SR_BEV;
+	status |= MIPS_SR_UX;
+	status |= MIPS_SR_KX;
+	status |= MIPS_SR_SX;
 	mips_wr_status(status);
 
 	epw_init(&epw_sc, EPW_BASE, EPW_WINDOW);
