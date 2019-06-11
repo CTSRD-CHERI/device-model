@@ -54,7 +54,8 @@ WARNFLAGS =			\
 	-Wno-pointer-sign	\
 	-Wmissing-include-dirs
 
-CFLAGS = -march=mips64 -mcpu=mips4 -G0 -O -g -nostdinc		\
+CFLAGS = -march=mips64 -mcpu=mips64r2 -G0 -O -g -nostdinc	\
+	--target=mips64-unknown-freebsd				\
 	 -mno-abicalls -msoft-float -fwrapv -fno-builtin-printf	\
 	${WARNFLAGS} -DWITHOUT_CAPSICUM=1 -DDM_BASE=${DM_BASE}	\
 	-DCONFIG_SCHED
