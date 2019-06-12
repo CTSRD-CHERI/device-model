@@ -67,6 +67,17 @@ ASM_ENTRY(_start)
 	nop
 2:
 
+#if 0
+	/* Debug: output a char to AJU1 console. */
+1:
+	dli	t0, 0x900000007f001000
+	dli	t1, 0x6100000000000000
+	sd	t1, 0(t0)
+	nop
+	j	1b
+	nop
+#endif
+
 	dla	sp, (DM_BASE + 0x100000)
 	nop
 	li	a0, 0
