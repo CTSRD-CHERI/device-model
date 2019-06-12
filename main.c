@@ -148,7 +148,7 @@ app_init(void)
 	addr = (uint64_t *)(DM_BASE + 0x800000);
 	*addr = 0x1515151515161617;
 
-	aju_init(&aju_sc, AJU1_BASE);
+	aju_init(&aju_sc, AJU1_BASE | MIPS_XKPHYS_UNCACHED_BASE);
 	console_register(uart_putchar, (void *)&aju_sc);
 
 	mips_install_intr_map(mips_intr_map);
