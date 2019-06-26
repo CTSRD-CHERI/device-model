@@ -45,12 +45,13 @@
 #include "fwd_device.h"
 #include "emul.h"
 #include "emul_msgdma.h"
+#include "emul_iommu.h"
 #include "emul_pci.h"
 #include "bhyve/bhyve_support.h"
 #include "bhyve/pci_e82545.h"
 
 #define	DM_FWD_NDEVICES		4
-#define	DM_EMUL_NDEVICES	5
+#define	DM_EMUL_NDEVICES	6
 
 #define	DM_DEBUG
 #undef	DM_DEBUG
@@ -83,6 +84,7 @@ const struct emul_link emul_map[DM_EMUL_NDEVICES] = {
 	{ 0x04000, 0x00020, emul_msgdma, &msgdma1_sc, MSGDMA_CSR },
 	{ 0x04020, 0x00020, emul_msgdma, &msgdma1_sc, MSGDMA_PF  },
 	{ 0x10000, 0x50000, emul_pci, &pci0_sc, PCI_GENERIC },
+	{ 0x60000, 0x10000, emul_iommu, NULL, MSGDMA_IOMMU  },
 };
 
 static int

@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2018 Ruslan Bukin <br@bsdpad.com>
+ * Copyright (c) 2019 Ruslan Bukin <br@bsdpad.com>
  * All rights reserved.
  *
  * This software was developed by SRI International and the University of
@@ -31,23 +31,11 @@
  * SUCH DAMAGE.
  */
 
-#ifndef	_EMUL_H_
-#define	_EMUL_H_
+#ifndef	_EMUL_IOMMU_H_
+#define	_EMUL_IOMMU_H_
 
-enum emul_device_type {
-	MSGDMA_CSR,
-	MSGDMA_PF,
-	MSGDMA_IOMMU,
-	PCI_GENERIC,
-};
+void
+emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
+    struct epw_request *req);
 
-struct emul_link {
-	uint64_t base_emul;
-	uint32_t size;
-	void (*request)(const struct emul_link *elink,
-	    struct epw_softc *sc, struct epw_request *req);
-	void *arg;
-	enum emul_device_type type;
-};
-
-#endif	/* !_EMUL_H_ */
+#endif	/* !_EMUL_IOMMU_H_ */

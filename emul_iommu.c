@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2018 Ruslan Bukin <br@bsdpad.com>
+ * Copyright (c) 2019 Ruslan Bukin <br@bsdpad.com>
  * All rights reserved.
  *
  * This software was developed by SRI International and the University of
@@ -31,23 +31,58 @@
  * SUCH DAMAGE.
  */
 
-#ifndef	_EMUL_H_
-#define	_EMUL_H_
+#include <sys/cdefs.h>
+#include <sys/systm.h>
+#include <sys/endian.h>
 
-enum emul_device_type {
-	MSGDMA_CSR,
-	MSGDMA_PF,
-	MSGDMA_IOMMU,
-	PCI_GENERIC,
-};
+#include <machine/cpuregs.h>
+#include <machine/cpufunc.h>
+#include <machine/frame.h>
+#include <machine/cache_mipsNN.h>
+#include <machine/cache_r4k.h>
+#include <machine/tlb.h>
 
-struct emul_link {
-	uint64_t base_emul;
-	uint32_t size;
-	void (*request)(const struct emul_link *elink,
-	    struct epw_softc *sc, struct epw_request *req);
-	void *arg;
-	enum emul_device_type type;
-};
+#include <mips/beri/beri_epw.h>
 
-#endif	/* !_EMUL_H_ */
+#include "device-model.h"
+#include "emul.h"
+#include "emul_iommu.h"
+
+#define	EMUL_IOMMU_DEBUG
+#undef	EMUL_IOMMU_DEBUG
+
+#ifdef	EMUL_IOMMU_DEBUG
+#define	dprintf(fmt, ...)	printf(fmt, ##__VA_ARGS__)
+#else
+#define	dprintf(fmt, ...)
+#endif
+
+void
+emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
+    struct epw_request *req)
+{
+	uint64_t offset;
+	uint64_t val;
+
+	offset = req->addr - elink->base_emul - EPW_WINDOW;
+
+	switch (req->data_len) {
+	case 8:
+		val = *(uint64_t *)req->data;
+		break;
+	case 4:
+		val = *(uint32_t *)req->data;
+		break;
+	case 2:
+		val = *(uint16_t *)req->data;
+		break;
+	case 1:
+		val = *(uint8_t *)req->data;
+		break;
+	}
+
+#if 0
+	if (req->is_write)
+		tlb_invalidate_address(val);
+#endif
+}
