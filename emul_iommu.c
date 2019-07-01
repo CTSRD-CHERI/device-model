@@ -57,6 +57,8 @@
 #define	dprintf(fmt, ...)
 #endif
 
+vm_offset_t *kernel_segmap;
+
 void
 emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
     struct epw_request *req)
@@ -81,8 +83,17 @@ emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
 		break;
 	}
 
-#if 0
-	if (req->is_write)
-		tlb_invalidate_address(val);
-#endif
+	printf("%s: offset %lx val %lx\n", __func__, offset, val);
+
+	switch (offset) {
+	case 0x0:
+		if (req->is_write)
+			tlb_invalidate_address(val);
+		break;
+	case 0x8:
+		kernel_segmap = (void *)val;
+		break;
+	default:
+		break;
+	}
 }
