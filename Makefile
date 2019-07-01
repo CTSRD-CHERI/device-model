@@ -24,12 +24,15 @@ OBJECTS =							\
 		bhyve/pci_e82545.o				\
 		bhyve/pthread.o					\
 		device-model.o					\
+		emul_iommu.o					\
 		emul_msgdma.o					\
 		emul_pci.o					\
 		fwd_device.o					\
 		main.o						\
 		start.o						\
 		test.o						\
+		tlb.o						\
+		tlbmiss.o					\
 		${OSDIR}/lib/libc/gen/assert.o			\
 		${OSDIR}/sys/dev/altera/fifo/fifo.o		\
 		${OSDIR}/sys/dev/altera/jtag_uart/jtag_uart.o	\
