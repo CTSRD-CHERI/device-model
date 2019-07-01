@@ -61,7 +61,9 @@ CFLAGS = -march=mips64 -mcpu=mips64 -G0 -O0 -g -nostdinc	\
 	--target=mips64-unknown-freebsd				\
 	 -mno-abicalls -msoft-float -fwrapv -fno-builtin-printf	\
 	${WARNFLAGS} -DWITHOUT_CAPSICUM=1 -DDM_BASE=${DM_BASE}	\
-	-DCONFIG_SCHED -DALTERA_MSGDMA_DESC_PF_STD
+	-DCONFIG_SCHED		\
+	-DCONFIG_MIPS_TLBMISS	\
+	-DALTERA_MSGDMA_DESC_PF_STD
 
 all:	${OBJDIR}/${APP}.bin
 
