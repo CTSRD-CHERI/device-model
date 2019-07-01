@@ -13,6 +13,11 @@ SECTIONS
 		*exception.o(.text)
 	}
 
+	. = (__DM_BASE__ + 0x2000);
+	.tlbmiss . : {
+		*tlbmiss.o(.text)
+	}
+
 	.text : {
 		*(.exception)
 		*(.text)
