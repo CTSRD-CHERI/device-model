@@ -170,6 +170,9 @@ app_init(void)
 	status |= MIPS_SR_SX;
 	mips_wr_status(status);
 
+	/* Select 4K page for TLB. */
+	mtc0(5, 0, 0);
+
 	epw_init(&epw_sc, EPW_BASE, EPW_WINDOW);
 	epw_control(&epw_sc, 1);
 
@@ -184,6 +187,53 @@ app_init(void)
 
 	return (0);
 }
+
+#if 1
+void tlb_nosegtab0(void);
+void tlb_nosegtab1(void);
+void tlb_nosegtab2(void);
+void tlb_nosegtab3(void);
+void tlb_miss(void);
+
+void
+tlb_nosegtab0(void)
+{
+
+	printf("%s: badvaddr %lx\n", mfc0(8, 0));
+	while (1);
+}
+
+void
+tlb_nosegtab1(void)
+{
+
+	printf("%s: badvaddr %lx\n", mfc0(8, 0));
+	while (1);
+}
+
+void
+tlb_nosegtab2(void)
+{
+
+	printf("%s: badvaddr %lx\n", mfc0(8, 0));
+	while (1);
+}
+
+void
+tlb_nosegtab3(void)
+{
+
+	printf("%s: badvaddr %lx\n", mfc0(8, 0));
+	while (1);
+}
+
+void
+tlb_miss(void)
+{
+
+	printf("tlb miss\n");
+}
+#endif
 
 int
 main(void)
