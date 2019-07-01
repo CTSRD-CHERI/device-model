@@ -31,69 +31,10 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-#include <sys/systm.h>
-#include <sys/endian.h>
+#ifndef	_TLB_H_
+#define	_TLB_H_
 
-#include <machine/cpuregs.h>
-#include <machine/cpufunc.h>
-#include <machine/frame.h>
-#include <machine/cache_mipsNN.h>
-#include <machine/cache_r4k.h>
+void tlb_invalidate_address(vm_offset_t va);
+void tlb_invalidate_all(void);
 
-#include <mips/beri/beri_epw.h>
-
-#include "tlb.h"
-#include "device-model.h"
-#include "emul.h"
-#include "emul_iommu.h"
-
-#define	EMUL_IOMMU_DEBUG
-#undef	EMUL_IOMMU_DEBUG
-
-#ifdef	EMUL_IOMMU_DEBUG
-#define	dprintf(fmt, ...)	printf(fmt, ##__VA_ARGS__)
-#else
-#define	dprintf(fmt, ...)
-#endif
-
-vm_offset_t *kernel_segmap;
-
-void
-emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
-    struct epw_request *req)
-{
-	uint64_t offset;
-	uint64_t val;
-
-	offset = req->addr - elink->base_emul - EPW_WINDOW;
-
-	switch (req->data_len) {
-	case 8:
-		val = *(uint64_t *)req->data;
-		break;
-	case 4:
-		val = *(uint32_t *)req->data;
-		break;
-	case 2:
-		val = *(uint16_t *)req->data;
-		break;
-	case 1:
-		val = *(uint8_t *)req->data;
-		break;
-	}
-
-	printf("%s: offset %lx val %lx\n", __func__, offset, val);
-
-	switch (offset) {
-	case 0x0:
-		if (req->is_write)
-			tlb_invalidate_address(val);
-		break;
-	case 0x8:
-		kernel_segmap = (void *)val;
-		break;
-	default:
-		break;
-	}
-}
+#endif	/* !_TLB_H_ */

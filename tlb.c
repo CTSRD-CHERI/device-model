@@ -31,9 +31,10 @@
 #include <machine/frame.h>
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
-#include <machine/tlb.h>
 
 #include <mips/mips/trap.h>
+
+#include "tlb.h"
 
 #define	PAGE_SHIFT		12
 #define	PAGE_SIZE		(1 << PAGE_SHIFT)
