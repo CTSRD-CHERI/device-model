@@ -132,13 +132,39 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 		reg = le32toh(desc->control);
 		if ((reg & CONTROL_OWN) == 0)
 			break;
+
 		if (sc->unit == 0)
-			base = (uint64_t)le32toh(desc->read_lo);
+			base = le32toh(desc->read_lo);
 		else
-			base = (uint64_t)le32toh(desc->write_lo);
+			base = le32toh(desc->write_lo);
+
+#if defined(ALTERA_MSGDMA_DESC_EXT) || defined(ALTERA_MSGDMA_DESC_PF_EXT)
+		if (sc->unit == 0)
+			base |= (uint64_t)le32toh(desc->read_hi) << 32;
+		else
+			base |= (uint64_t)le32toh(desc->write_hi) << 32;
+#endif
+
+#if 0
+		if (sc->unit == 0) {
+			printf("%s%d: base %lx (lo %x hi %x) size %lx\n",
+			    __func__, sc->unit, base, desc->read_lo,
+			    desc->read_hi, le32toh(desc->length));
+		} else {
+			printf("%s%d: base %lx (lo %x hi %x) size %lx\n",
+			    __func__, sc->unit, base, desc->write_lo,
+			    desc->write_hi, le32toh(desc->length));
+		}
+#endif
 
 		iov.iov_len = le32toh(desc->length);
+#ifdef CONFIG_IOMMU
+		iov.iov_base = (void *) (base);
+#else
 		iov.iov_base = (void *) (base | MIPS_XKPHYS_UNCACHED_BASE);
+#endif
+
+		__asm __volatile("sync;sync;sync");
 
 		if (sc->unit == 0)
 			processed = fifo_process_tx(sc->fifo_sc, &iov, 1);
