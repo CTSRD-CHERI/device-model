@@ -177,7 +177,9 @@ app_init(void)
 	epw_control(&epw_sc, 1);
 
 	/* RX FIFO interrupt enable */
+#ifndef CONFIG_IOMMU
 	beripic_enable(&beripic_sc, FIFO3_INTR, 0 /* hard IRQ */);
+#endif
 
 	printf("%s: Initializing malloc\n", __func__);
 	malloc_init();
