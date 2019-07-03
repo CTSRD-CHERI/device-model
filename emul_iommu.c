@@ -91,6 +91,10 @@ emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
 			tlb_invalidate_address(val);
 		break;
 	case 0x8:
+		/* Ensure segmap base is uncached. */
+		val &= ~MIPS_XKPHYS_CACHED_NC;
+		val |= MIPS_XKPHYS_UNCACHED;
+		printf("%s: segmap base %lx\n", __func__, val);
 		kernel_segmap = (void *)val;
 		break;
 	default:
