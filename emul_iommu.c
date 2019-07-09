@@ -83,7 +83,7 @@ emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
 		break;
 	}
 
-	printf("%s: offset %lx val %lx\n", __func__, offset, val);
+	dprintf("%s: offset %lx val %lx\n", __func__, offset, val);
 
 	switch (offset) {
 	case 0x0:
