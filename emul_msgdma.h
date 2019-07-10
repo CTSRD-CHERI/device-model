@@ -34,6 +34,9 @@
 #ifndef	_EMUL_DEVICE_H_
 #define	_EMUL_DEVICE_H_
 
+#include <sys/thread.h>
+#include <sys/sem.h>
+
 struct msgdma_csr {
 	uint32_t dma_status;
 	uint32_t dma_control;
@@ -55,11 +58,13 @@ struct msgdma_softc {
 	uint8_t unit;
 	struct msgdma_desc *cur_desc;
 	struct altera_fifo_softc *fifo_sc;
+	sem_t sem;	/* RX interrupt work thread semaphore. */
 };
 
 void emul_msgdma(const struct emul_link *elink,
     struct epw_softc *sc, struct epw_request *req);
 void emul_msgdma_fifo_intr(void *arg);
 void emul_msgdma_poll(struct msgdma_softc *sc);
+void emul_msgdma_rx_init(struct msgdma_softc *sc);
 
 #endif	/* !_EMUL_DEVICE_H_ */

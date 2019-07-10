@@ -39,7 +39,7 @@ OBJECTS =							\
 		${OSDIR}/sys/mips/beri/beripic.o		\
 		${OSDIR}/sys/mips/beri/beri_epw.o		\
 
-KERNEL = malloc mips (cache) sched (nprio=2)
+KERNEL = malloc mips (cache) sched (nprio=2) sem
 LIBRARIES = md5 libc
 
 WARNFLAGS =			\

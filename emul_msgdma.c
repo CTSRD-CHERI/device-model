@@ -34,6 +34,8 @@
 #include <sys/cdefs.h>
 #include <sys/systm.h>
 #include <sys/endian.h>
+#include <sys/thread.h>
+#include <sys/sem.h>
 
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
@@ -94,19 +96,6 @@ send_soft_irq(struct msgdma_softc *sc)
 		*(volatile uint64_t *)(addr) = (1 << DM_MSGDMA1_INTR);
 	else
 		*(volatile uint64_t *)(addr) = (1 << DM_MSGDMA0_INTR);
-}
-
-void
-emul_msgdma_fifo_intr(void *arg)
-{
-	struct msgdma_softc *sc;
-
-	sc = arg;
-
-	printf("%s(%d)\n", __func__, sc->unit);
-
-	if (sc->unit == 1)
-		emul_msgdma_poll(sc);
 }
 
 void
@@ -370,4 +359,43 @@ emul_msgdma(const struct emul_link *elink, struct epw_softc *epw_sc,
 			pf_w(sc, req, offset, val);
 		else
 			pf_r(sc, req, offset);
+}
+
+static void
+emul_msgdma_work(void *arg)
+{
+	struct msgdma_softc *sc;
+
+	sc = arg;
+
+	printf("%s: startup\n", __func__);
+
+	while (1) {
+		sem_wait(&sc->sem);
+		emul_msgdma_poll(sc);
+	}
+}
+
+void
+emul_msgdma_rx_init(struct msgdma_softc *sc)
+{
+	struct thread *td;
+
+	sem_init(&sc->sem, 1);
+
+	td = thread_create("work", 1, USEC_TO_TICKS(100000),
+	    4096, emul_msgdma_work, sc);
+}
+
+void
+emul_msgdma_fifo_intr(void *arg)
+{
+	struct msgdma_softc *sc;
+
+	sc = arg;
+
+	dprintf("%s(%d)\n", __func__, sc->unit);
+
+	if (sc->unit == 1)
+		sem_post(&sc->sem);
 }
