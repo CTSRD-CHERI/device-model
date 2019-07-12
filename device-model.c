@@ -143,7 +143,10 @@ dm_init(struct epw_softc *sc)
 	msgdma1_sc.unit = 1;
 	msgdma1_sc.fifo_sc = &fifo1_sc;
 
-	emul_msgdma_rx_init(&msgdma1_sc);
+	error = emul_msgdma_rx_init(&msgdma1_sc);
+	if (error)
+		panic("Can't setup msgdma\n");
+
 	emul_pci_init(&pci0_sc);
 	req_count = 0;
 

@@ -65,6 +65,6 @@ void emul_msgdma(const struct emul_link *elink,
     struct epw_softc *sc, struct epw_request *req);
 void emul_msgdma_fifo_intr(void *arg);
 void emul_msgdma_poll(struct msgdma_softc *sc);
-void emul_msgdma_rx_init(struct msgdma_softc *sc);
+int emul_msgdma_rx_init(struct msgdma_softc *sc);
 
 #endif	/* !_EMUL_DEVICE_H_ */

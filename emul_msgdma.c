@@ -376,7 +376,7 @@ emul_msgdma_work(void *arg)
 	}
 }
 
-void
+int
 emul_msgdma_rx_init(struct msgdma_softc *sc)
 {
 	struct thread *td;
@@ -385,6 +385,12 @@ emul_msgdma_rx_init(struct msgdma_softc *sc)
 
 	td = thread_create("work", 1, USEC_TO_TICKS(100000),
 	    4096, emul_msgdma_work, sc);
+	if (td == NULL)
+		return (-1);
+
+	mdx_sched_add(td);
+
+	return (0);
 }
 
 void
