@@ -50,6 +50,7 @@
 #include "device-model.h"
 #include "emul.h"
 #include "emul_msgdma.h"
+#include "emul_iommu.h"
 
 #define	EMUL_MSGDMA_DEBUG
 #undef	EMUL_MSGDMA_DEBUG
@@ -155,6 +156,7 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 
 		__asm __volatile("sync;sync;sync");
 
+		emul_iommu_activate(sc->iommu_sc);
 		if (sc->unit == 0)
 			processed = fifo_process_tx(sc->fifo_sc, &iov, 1);
 		else

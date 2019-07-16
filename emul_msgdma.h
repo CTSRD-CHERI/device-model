@@ -58,6 +58,7 @@ struct msgdma_softc {
 	uint8_t unit;
 	struct msgdma_desc *cur_desc;
 	struct altera_fifo_softc *fifo_sc;
+	struct iommu_softc *iommu_sc;
 	sem_t sem;	/* RX interrupt work thread semaphore. */
 };
 

@@ -63,8 +63,11 @@ void
 emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
     struct epw_request *req)
 {
+	struct iommu_softc *sc;
 	uint64_t offset;
 	uint64_t val;
+
+	sc = elink->arg;
 
 	offset = req->addr - elink->base_emul - EPW_WINDOW;
 
@@ -95,9 +98,16 @@ emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
 		val &= ~MIPS_XKPHYS_CACHED_NC;
 		val |= MIPS_XKPHYS_UNCACHED;
 		printf("%s: segmap base %lx\n", __func__, val);
-		kernel_segmap = (void *)val;
+		sc->kernel_segmap = (void *)val;
 		break;
 	default:
 		break;
 	}
+}
+
+void
+emul_iommu_activate(struct iommu_softc *sc)
+{
+
+	kernel_segmap = sc->kernel_segmap;
 }

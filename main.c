@@ -199,7 +199,7 @@ void
 tlb_nosegtab0(void)
 {
 
-	printf("%s: badvaddr %lx\n", mfc0(8, 0));
+	printf("%s: badvaddr %lx\n", __func__, mfc0(8, 0));
 	while (1);
 }
 
@@ -207,7 +207,7 @@ void
 tlb_nosegtab1(void)
 {
 
-	printf("%s: badvaddr %lx\n", mfc0(8, 0));
+	printf("%s: badvaddr %lx\n", __func__, mfc0(8, 0));
 	while (1);
 }
 
@@ -215,7 +215,7 @@ void
 tlb_nosegtab2(void)
 {
 
-	printf("%s: badvaddr %lx\n", mfc0(8, 0));
+	printf("%s: badvaddr %lx\n", __func__, mfc0(8, 0));
 	while (1);
 }
 
@@ -223,7 +223,7 @@ void
 tlb_nosegtab3(void)
 {
 
-	printf("%s: badvaddr %lx\n", mfc0(8, 0));
+	printf("%s: badvaddr %lx\n", __func__, mfc0(8, 0));
 	while (1);
 }
 

@@ -34,8 +34,14 @@
 #ifndef	_EMUL_IOMMU_H_
 #define	_EMUL_IOMMU_H_
 
+struct iommu_softc {
+	int unit;
+	vm_offset_t *kernel_segmap;
+};
+
 void
 emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
     struct epw_request *req);
+void emul_iommu_activate(struct iommu_softc *sc);
 
 #endif	/* !_EMUL_IOMMU_H_ */

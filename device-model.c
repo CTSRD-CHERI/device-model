@@ -51,7 +51,7 @@
 #include "bhyve/pci_e82545.h"
 
 #define	DM_FWD_NDEVICES		4
-#define	DM_EMUL_NDEVICES	6
+#define	DM_EMUL_NDEVICES	7
 
 #define	DM_DEBUG
 #undef	DM_DEBUG
@@ -64,6 +64,8 @@
 
 struct msgdma_softc msgdma0_sc;
 struct msgdma_softc msgdma1_sc;
+struct iommu_softc iommu0_sc;
+struct iommu_softc iommu1_sc;
 struct altera_fifo_softc fifo0_sc;
 struct altera_fifo_softc fifo1_sc;
 struct pci_softc pci0_sc;
@@ -84,7 +86,8 @@ const struct emul_link emul_map[DM_EMUL_NDEVICES] = {
 	{ 0x04000, 0x00020, emul_msgdma, &msgdma1_sc, MSGDMA_CSR },
 	{ 0x04020, 0x00020, emul_msgdma, &msgdma1_sc, MSGDMA_PF  },
 	{ 0x10000, 0x50000, emul_pci, &pci0_sc, PCI_GENERIC },
-	{ 0x60000, 0x10000, emul_iommu, NULL, MSGDMA_IOMMU  },
+	{ 0x60000, 0x00100, emul_iommu, &iommu0_sc, MSGDMA_IOMMU },
+	{ 0x60100, 0x00100, emul_iommu, &iommu1_sc, MSGDMA_IOMMU },
 };
 
 static int
@@ -134,14 +137,18 @@ dm_init(struct epw_softc *sc)
 	fifo0_sc.fifo_base_mem = FIFO2_BASE_MEM;
 	fifo0_sc.fifo_base_ctrl = FIFO2_BASE_CTRL;
 	fifo0_sc.unit = 0;
+	iommu0_sc.unit = 0;
 	msgdma0_sc.unit = 0;
 	msgdma0_sc.fifo_sc = &fifo0_sc;
+	msgdma0_sc.iommu_sc = &iommu0_sc;
 
 	fifo1_sc.fifo_base_mem = FIFO3_BASE_MEM;
 	fifo1_sc.fifo_base_ctrl = FIFO3_BASE_CTRL;
 	fifo1_sc.unit = 1;
+	iommu1_sc.unit = 1;
 	msgdma1_sc.unit = 1;
 	msgdma1_sc.fifo_sc = &fifo1_sc;
+	msgdma1_sc.iommu_sc = &iommu1_sc;
 
 	error = emul_msgdma_rx_init(&msgdma1_sc);
 	if (error)
