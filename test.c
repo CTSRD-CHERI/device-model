@@ -63,7 +63,7 @@ test_callout(void)
 
 	while (1) {
 		printf("Sleep %d msec\n", i);
-		raw_sleep(i * 1000000);
+		mdx_tsleep(i * 1000000);
 		printf("Sleep %d msec done\n", i);
 		i += 1;
 	}

@@ -373,7 +373,7 @@ emul_msgdma_work(void *arg)
 	printf("%s: startup\n", __func__);
 
 	while (1) {
-		sem_wait(&sc->sem);
+		mdx_sem_wait(&sc->sem);
 		emul_msgdma_poll(sc);
 	}
 }
@@ -383,7 +383,7 @@ emul_msgdma_rx_init(struct msgdma_softc *sc)
 {
 	struct thread *td;
 
-	sem_init(&sc->sem, 1);
+	mdx_sem_init(&sc->sem, 1);
 
 	td = thread_create("work", 1, USEC_TO_TICKS(100000),
 	    4096, emul_msgdma_work, sc);
@@ -405,5 +405,5 @@ emul_msgdma_fifo_intr(void *arg)
 	dprintf("%s(%d)\n", __func__, sc->unit);
 
 	if (sc->unit == 1)
-		sem_post(&sc->sem);
+		mdx_sem_post(&sc->sem);
 }

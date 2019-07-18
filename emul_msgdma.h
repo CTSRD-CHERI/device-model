@@ -59,7 +59,7 @@ struct msgdma_softc {
 	struct msgdma_desc *cur_desc;
 	struct altera_fifo_softc *fifo_sc;
 	struct iommu_softc *iommu_sc;
-	sem_t sem;	/* RX interrupt work thread semaphore. */
+	mdx_sem_t sem;	/* RX interrupt work thread semaphore. */
 };
 
 void emul_msgdma(const struct emul_link *elink,
