@@ -128,4 +128,52 @@ device		ahci
 | 0x11000000 | 0x13000000 |  32 MB | free space                           |
 | 0x13000000 | 0x20000000 | 208 MB | AHCI SATA device memory block        |
 
+### IOMMU
+
+IOMMU module translates addresses for various device-model peripherals and manages BERI TLB.
+
+Only Altera FIFO-based models are currently evaluated.
+
+To enable IOMMU module build device-model project with DM_IOMMU=1 environment variable.
+
+On the FreeBSD side, add the following IOMMU devices to your DTS file:
+
+```
+               va_space0: iommu-va@7fb60000 {
+                       compatible = "beri,iommu-va-space";
+                       reg = <0x0 0x20000000>;
+               };
+
+               va_space1: iommu-va@7fb60100 {
+                       compatible = "beri,iommu-va-space";
+                       reg = <0x20000000 0x20000000>;
+               };
+
+               iommu0: iommu@7fb60000 {
+                       compatible = "beri,iommu";
+                       reg = <0x7fb60000 0x100>;
+                       va-region = <&va_space0>;
+                       status = "okay";
+               };
+
+               iommu1: iommu@7fb60100 {
+                       compatible = "beri,iommu";
+                       reg = <0x7fb60100 0x100>;
+                       va-region = <&va_space1>;
+                       status = "okay";
+               };
+```
+
+Add the "xdma,iommu" property to the nodes of the models, for example
+
+```
+               dm_msgdma0: msgdma@7fb04080 {
+                       xdma,iommu = <&iommu0>;
+               };
+
+               dm_msgdma1: msgdma@7fb04000 { 
+                       xdma,iommu = <&iommu1>;
+               };
+```
+
 ![alt text](https://raw.githubusercontent.com/CTSRD-CHERI/device-model/master/images/de4.jpg)
