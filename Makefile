@@ -8,6 +8,7 @@ SIZE =		llvm-size60
 
 OBJDIR =	obj
 OSDIR =		mdepx
+
 LDSCRIPT_TPL =	${CURDIR}/ldscript.tpl
 LDSCRIPT =	${OBJDIR}/ldscript
 
@@ -16,30 +17,36 @@ DM_BASE_CACHED =	0xffffffff90000000
 DM_BASE ?=		${DM_BASE_CACHED}
 
 OBJECTS =							\
-		bhyve/bhyve_support.o				\
-		bhyve/block_if.o				\
-		bhyve/mem.o					\
-		bhyve/pci_ahci.o				\
-		bhyve/pci_emul.o				\
-		bhyve/pci_e82545.o				\
-		bhyve/pthread.o					\
-		device-model.o					\
-		emul_iommu.o					\
-		emul_msgdma.o					\
-		emul_pci.o					\
-		fwd_device.o					\
-		main.o						\
-		start.o						\
-		test.o						\
-		tlb.o						\
-		tlbmiss.o					\
-		${OSDIR}/lib/libc/gen/assert.o			\
-		${OSDIR}/sys/dev/altera/fifo/fifo.o		\
-		${OSDIR}/sys/dev/altera/jtag_uart/jtag_uart.o	\
-		${OSDIR}/sys/mips/beri/beripic.o		\
-		${OSDIR}/sys/mips/beri/beri_epw.o		\
+	bhyve/bhyve_support.o					\
+	bhyve/block_if.o					\
+	bhyve/mem.o						\
+	bhyve/pci_ahci.o					\
+	bhyve/pci_emul.o					\
+	bhyve/pci_e82545.o					\
+	bhyve/pthread.o						\
+	device-model.o						\
+	emul_iommu.o						\
+	emul_msgdma.o						\
+	emul_pci.o						\
+	fwd_device.o						\
+	main.o							\
+	start.o							\
+	test.o							\
+	tlb.o							\
+	tlbmiss.o						\
+	${OSDIR}/lib/libc/gen/assert.o				\
+	${OSDIR}/kernel/dev/altera/fifo/fifo.o			\
+	${OSDIR}/kernel/dev/altera/jtag_uart/jtag_uart.o	\
+	${OSDIR}/kernel/mips/beri/beripic.o			\
+	${OSDIR}/kernel/mips/beri/beri_epw.o			\
 
-KERNEL = malloc mips (cache) sched (nprio=2) sem
+KERNEL =					\
+	callout (tsleep sched)			\
+	malloc (fl fl_wrapper)			\
+	mips (cache)				\
+	sched (sem nprio=2 malloc)		\
+	systm (console)
+
 LIBRARIES = md5 libc
 
 WARNFLAGS =			\
