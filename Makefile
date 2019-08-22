@@ -40,12 +40,38 @@ OBJECTS =							\
 	${OSDIR}/kernel/mips/beri/beripic.o			\
 	${OSDIR}/kernel/mips/beri/beri_epw.o			\
 
-KERNEL =					\
-	callout (tsleep sched)			\
-	malloc (fl fl_wrapper)			\
-	mips (cache)				\
-	sched (sem nprio=2 malloc)		\
-	systm (console)
+define KERNEL_CONFIG
+	module callout;
+	module malloc;
+	module mips;
+	module sched;
+	module systm;
+
+	callout {
+		include tsleep;
+		include sched;
+	};
+
+	malloc {
+		include fl;
+		include fl_wrapper;
+	};
+
+	mips {
+		include cache;
+	};
+
+	sched {
+		include sem;
+		include malloc;
+
+		nprio = 2;
+	};
+
+	systm {
+		include console;
+	};
+endef
 
 LIBRARIES = md5 libc
 
