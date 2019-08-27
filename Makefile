@@ -40,41 +40,6 @@ OBJECTS =							\
 	${OSDIR}/kernel/mips/beri/beripic.o			\
 	${OSDIR}/kernel/mips/beri/beri_epw.o			\
 
-define KERNEL_CONFIG
-	module callout;
-	module malloc;
-	module mips;
-	module sched;
-	module systm;
-
-	callout {
-		include tsleep;
-		include sched;
-	};
-
-	malloc {
-		include fl;
-		include fl_wrapper;
-	};
-
-	mips {
-		include cache;
-	};
-
-	sched {
-		include sem;
-		include malloc;
-
-		nprio = 2;
-	};
-
-	systm {
-		include console;
-	};
-endef
-
-LIBRARIES = md5 libc
-
 WARNFLAGS =			\
 	-Werror			\
 	-Wall			\
@@ -112,6 +77,4 @@ llvm-objdump:
 clean:
 	@rm -f ${LDSCRIPT} ${OBJECTS}
 
-include ${OSDIR}/lib/libc/Makefile.inc
-include ${OSDIR}/lib/md5/Makefile.inc
 include ${OSDIR}/mk/default.mk
