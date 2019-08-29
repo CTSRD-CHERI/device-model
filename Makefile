@@ -35,10 +35,6 @@ OBJECTS =							\
 	tlb.o							\
 	tlbmiss.o						\
 	${OSDIR}/lib/libc/gen/assert.o				\
-	${OSDIR}/kernel/dev/altera/fifo/fifo.o			\
-	${OSDIR}/kernel/dev/altera/jtag_uart/jtag_uart.o	\
-	${OSDIR}/kernel/mips/beri/beripic.o			\
-	${OSDIR}/kernel/mips/beri/beri_epw.o			\
 
 WARNFLAGS =			\
 	-Werror			\

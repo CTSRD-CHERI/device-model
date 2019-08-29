@@ -4,9 +4,15 @@ kernel {
 	module mips;
 	module sched;
 	module systm;
+	module dev;
+
+	dev {
+		options altera_fifo;
+		options altera_jtag_uart;
+	};
 
 	callout {
-		options tsleep sched;
+		options tsleep_sched;
 	};
 
 	malloc {
@@ -15,6 +21,7 @@ kernel {
 
 	mips {
 		options cache;
+		options beri;
 	};
 
 	sched {
