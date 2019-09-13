@@ -54,14 +54,14 @@ VECTOR(MipsTLBMiss)
 	andi		k0, k0, PDEPTRMASK		# k0 = seg offs
 	PTR_ADDU	k1, k0, k1			# k1 = seg entry offs
 	PTR_L		k1, 0(k1)			# k1 = seg entry
-	beq		k1, zero, tlb_nosegtab0
+	beq		k1, zero, 1f
 	nop
 	mfc0		k0, CP0_BAD_VADDR		# k0 = bad addr
 	PTR_SRL		k0, PDRSHIFT - PTRSHIFT		# k0 = vpn
 	andi		k0, k0, PDEPTRMASK		# k0 = pde offset
 	PTR_ADDU	k1, k0, k1			# k1 = pde entry offs
 	PTR_L		k1, 0(k1)			# k1 = pde entry
-	beq		k1, zero, tlb_nosegtab1
+	beq		k1, zero, 2f
 	nop
 	mfc0		k0, CP0_BAD_VADDR		# k0 = bad addr
 	PTR_SRL		k0, PAGE_SHIFT - PTESHIFT	# k0 = vpn
@@ -79,6 +79,15 @@ VECTOR(MipsTLBMiss)
 	HAZARD_DELAY
 	eret
 	nop
+1:
+	PTR_L	k0, tlb_nosegtab0
+	jr	k0
+	nop
+2:
+	PTR_L	k0, tlb_nosegtab1
+	jr	k0
+	nop
+
 	.set pop
 VECTOR_END(MipsTLBMiss)
 
@@ -92,14 +101,14 @@ VECTOR(MipsTLBMissException)
 	andi		k0, k0, PDEPTRMASK		# k0 = seg offs
 	PTR_ADDU	k1, k0, k1			# k1 = seg entry offs
 	PTR_L		k1, 0(k1)			# k1 = seg entry
-	beq		k1, zero, tlb_nosegtab0
+	beq		k1, zero, 1f
 	nop
 	mfc0		k0, CP0_BAD_VADDR		# k0 = bad addr
 	PTR_SRL		k0, PDRSHIFT - PTRSHIFT		# k0 = vpn
 	andi		k0, k0, PDEPTRMASK		# k0 = pde offset
 	PTR_ADDU	k1, k0, k1			# k1 = pde entry offs
 	PTR_L		k1, 0(k1)			# k1 = pde entry
-	beq		k1, zero, tlb_nosegtab1
+	beq		k1, zero, 2f
 	nop
 	mfc0		k0, CP0_BAD_VADDR		# k0 = bad addr
 	PTR_SRL		k0, PAGE_SHIFT - PTESHIFT	# k0 = vpn
@@ -117,5 +126,14 @@ VECTOR(MipsTLBMissException)
 	HAZARD_DELAY
 	jr	ra
 	nop
+1:
+	PTR_L	k0, tlb_nosegtab0
+	jr	k0
+	nop
+2:
+	PTR_L	k0, tlb_nosegtab1
+	jr	k0
+	nop
+
 	.set pop
 VECTOR_END(MipsTLBMissException)
