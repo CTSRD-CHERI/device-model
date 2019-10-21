@@ -44,7 +44,7 @@ export CFLAGS = -march=mips64 -mcpu=mips64 -G0 -O0 -g -nostdinc	\
 	-DDM_BASE=${DM_BASE}
 
 all:	${LDSCRIPT}
-	python3 -B ${OSDIR}/tools/emitter.py mdepx.conf
+	@python3 -B ${OSDIR}/tools/emitter.py mdepx.conf
 	@${OBJCOPY} -O binary obj/${APP}.elf obj/${APP}.bin
 	@${SIZE} obj/${APP}.elf
 
