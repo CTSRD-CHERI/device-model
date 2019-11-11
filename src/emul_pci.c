@@ -146,6 +146,7 @@ emul_pci(const struct emul_link *elink, struct epw_softc *epw_sc,
 		printf("%s (%d/%d/%d): %d-bytes write to %lx\n",
 		    __func__, bus, slot, func, bytes, offset);
 		bcopy((void *)&req->data[0], &val8[4 - bytes], bytes);
+		printf("%s write val %x\n", __func__, *(uint32_t *)&val8[0]);
 		bhyve_pci_cfgrw(sc->ctx, 0, bus, slot, func, coff,
 		    bytes, (uint32_t *)&val8[0]);
 	} else {
