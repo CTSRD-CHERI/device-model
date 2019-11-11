@@ -46,7 +46,7 @@ ${LDSCRIPT}:
 	@sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_TPL} > ${LDSCRIPT}
 
 llvm-objdump:
-	llvm-objdump-cheri -d ${APP}.elf | less
+	llvm-objdump-cheri -d ${OBJDIR}/${APP}.elf | less
 
 clean:
 	@rm -rf obj/*
