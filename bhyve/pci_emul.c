@@ -29,7 +29,7 @@
  */
 
 #include <sys/cdefs.h>
-
+#include <sys/systm.h>
 #include <sys/param.h>
 #include <sys/linker_set.h>
 
@@ -95,8 +95,8 @@ static uint64_t pci_emul_membase64;
 #define	PCI_EMUL_IOBASE		0x2000
 #define	PCI_EMUL_IOLIMIT	0x10000
 
-#define	PCI_EMUL_ECFG_BASE	0xE0000000		    /* 3.5GB */
-#define	PCI_EMUL_ECFG_SIZE	(MAXBUSES * 1024 * 1024)    /* 1MB per bus */
+#define	PCI_EMUL_ECFG_BASE	0xFDC00000
+#define	PCI_EMUL_ECFG_SIZE	(MAXBUSES * 1024 * 2)    /* 2KB per bus */
 SYSRES_MEM(PCI_EMUL_ECFG_BASE, PCI_EMUL_ECFG_SIZE);
 
 #define	PCI_EMUL_MEMLIMIT32	PCI_EMUL_ECFG_BASE
@@ -442,7 +442,8 @@ pci_emul_alloc_resource(uint64_t *baseptr, uint64_t limit, uint64_t size,
 
 	base = roundup2(*baseptr, size);
 
-	printf("%s: base %lx, size %lx, limit %lx\n", __func__, base, size, limit);
+	printf("%s: base %lx, size %lx, limit %lx\n",
+	    __func__, base, size, limit);
 
 	if (base + size <= limit) {
 		*addr = base;
@@ -457,6 +458,7 @@ pci_emul_alloc_bar(struct pci_devinst *pdi, int idx, enum pcibar_type type,
 		   uint64_t size)
 {
 
+	printf("%s: pci_emul_alloc_bar %d\n", __func__, idx);
 	return (pci_emul_alloc_pbar(pdi, idx, 0, type, size));
 }
 
@@ -470,6 +472,8 @@ modify_bar_registration(struct pci_devinst *pi, int idx, int registration)
 	int error;
 	struct inout_port iop;
 	struct mem_range mr;
+
+	printf("%s: idx %d registration %d\n", __func__, idx, registration);
 
 	switch (pi->pi_bar[idx].type) {
 	case PCIBAR_IO:
@@ -597,6 +601,8 @@ pci_emul_alloc_pbar(struct pci_devinst *pdi, int idx, uint64_t hostbase,
 
 	assert(idx >= 0 && idx <= PCI_BARMAX);
 
+	printf("%s: idx %d, type %d\n", __func__, idx, type);
+
 	if ((size & (size - 1)) != 0)
 		size = 1UL << flsl(size);	/* round up to a power of 2 */
 
@@ -662,8 +668,10 @@ pci_emul_alloc_pbar(struct pci_devinst *pdi, int idx, uint64_t hostbase,
 
 	if (baseptr != NULL) {
 		error = pci_emul_alloc_resource(baseptr, limit, size, &addr);
-		if (error != 0)
+		if (error != 0) {
+			printf("%s: error %d\n", __func__, error);
 			return (error);
+		}
 	}
 
 	pdi->pi_bar[idx].type = type;
@@ -1103,7 +1111,7 @@ init_pci(struct vmctx *ctx)
 #if 0
 	pci_emul_membase32 = vm_get_lowmem_limit(ctx);
 #else
-	pci_emul_membase32 = 0x7fb10000;
+	pci_emul_membase32 = 0xfdb10000;
 #endif
 	pci_emul_membase64 = PCI_EMUL_MEMBASE64;
 
@@ -2159,6 +2167,9 @@ bhyve_pci_init(struct vmctx *ctx)
 	struct slotinfo *si;
 	char *name;
 	char *optstr;
+	int error;
+
+	printf("%s\n", __func__);
 
 	bnum = 0;
 	snum = 0;
@@ -2188,7 +2199,9 @@ bhyve_pci_init(struct vmctx *ctx)
 	sprintf(optstr, "hd:test");
 	si->si_funcs[fnum].fi_param = optstr;
 
-	init_pci(ctx);
+	error = init_pci(ctx);
+	if (error)
+		panic("Failed to init PCI.");
 
 	return (0);
 }
