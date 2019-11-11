@@ -154,7 +154,10 @@ dm_init(struct epw_softc *sc)
 	if (error)
 		panic("Can't setup msgdma\n");
 
-	emul_pci_init(&pci0_sc);
+	error = emul_pci_init(&pci0_sc);
+	if (error)
+		panic("Can't init PCI\n");
+
 	req_count = 0;
 
 	error = e82545_setup_fifo(&fifo0_sc, &fifo1_sc);
