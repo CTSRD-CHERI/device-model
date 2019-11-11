@@ -2455,6 +2455,7 @@ e82545_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 {
 	DPRINTF("Loading with options: %s\r\n", opts);
 
+	printf("%s\n", __func__);
 #if 0
 	MD5_CTX mdctx;
 #endif
