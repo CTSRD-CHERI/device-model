@@ -174,6 +174,8 @@ app_init(void)
 	mtc0(5, 0, 0);
 
 	epw_init(&epw_sc, EPW_BASE, EPW_WINDOW);
+
+	/* Enable EPW */
 	epw_control(&epw_sc, 1);
 
 	/* RX FIFO interrupt enable */
