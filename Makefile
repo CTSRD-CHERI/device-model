@@ -16,31 +16,23 @@ DM_BASE_UNCACHED =	0xffffffffb0000000
 DM_BASE_CACHED =	0xffffffff90000000
 DM_BASE ?=		${DM_BASE_CACHED}
 
-WARNFLAGS =			\
-	-Werror			\
-	-Wall			\
-	-Wmissing-prototypes	\
-	-Wredundant-decls	\
-	-Wnested-externs	\
-	-Wstrict-prototypes	\
-	-Wmissing-prototypes	\
-	-Wpointer-arith		\
-	-Winline		\
-	-Wcast-qual		\
-	-Wundef			\
-	-Wno-pointer-sign	\
-	-Wmissing-include-dirs
-
 ifdef DM_IOMMU
 DM_FLAGS = -DALTERA_MSGDMA_DESC_PF_EXT -DMDX_MIPS_TLB -DCONFIG_IOMMU
 else
 DM_FLAGS = -DALTERA_MSGDMA_DESC_PF_STD
 endif
 
-export CFLAGS = -march=mips64 -mcpu=mips64 -G0 -O0 -g -nostdinc	\
-	--target=mips64-unknown-freebsd				\
-	-mno-abicalls -msoft-float -fwrapv -fno-builtin-printf	\
-	${WARNFLAGS} ${DM_FLAGS} -DWITHOUT_CAPSICUM=1		\
+export CFLAGS = --target=cheri-unknown-freebsd		\
+	-march=beri -mabi=64 -mcpu=beri -cheri=128	\
+	-cheri-cap-table-abi=pcrel			\
+	-ftls-model=local-exec -nostdinc -G0		\
+	-O0 -g						\
+	-fno-builtin-printf -ffreestanding		\
+	-msoft-float -fwrapv				\
+	-fomit-frame-pointer -D__mips_n64 -nostdlib	\
+	-DBASE_ADDR=0xffffffff80100000			\
+	-mno-abicalls -fno-pic				\
+	${DM_FLAGS} -DWITHOUT_CAPSICUM=1		\
 	-DDM_BASE=${DM_BASE}
 
 export ASFLAGS = ${CFLAGS}
