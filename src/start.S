@@ -35,11 +35,55 @@
 #include <machine/cpuregs.h>
 #include <machine/asm.h>
 
+#include <machine/cherireg.h>
+#include <machine/cheriasm.h>
+
 #include <mips/mips/saverestore.S>
 
 #define	BERI_RESET_VECTOR	0x40000000
 
+.set cheri_sysregs_accessible
+
+	.set noreorder
+	.text
 ASM_ENTRY(_start)
+
+	mtc0    zero, CP0_CAUSE
+
+	/* Enable CHERI */
+
+	mfc0	t0, CP0_STATUS
+	li	t1, 0x40000000		/* no float */
+	or	t0, t0, t1
+	li	t1, 0x4			/* Clear ELR */
+	nor	t1, t1, t1
+	and	t0, t0, t1
+
+	li	t1, 0x3 << 3
+	not	t1, t1
+	and	t0, t0, t1		/* Set KSU = 0 */
+
+	li	t1, 0x7 << 5
+	or	t0, t0, t1		/* Set UX, SX, and KSX */
+	or	t0, t0, (3 << 8)	/* Set user interrupt bits */
+	mtc0	t0, CP0_STATUS
+
+	nop; nop; nop; nop; nop; nop; nop; nop;
+
+	CHERI_LOCORE_ROOT_CAPS
+	/*
+	 * Create the parent kernel sealing capablity.
+	 */
+	cmove		CHERI_REG_C27, CHERI_REG_C28
+	REG_LI		t0, CHERI_SEALCAP_KERNEL_BASE
+	csetoffset	CHERI_REG_C27, CHERI_REG_C27, t0
+	REG_LI		t0, CHERI_SEALCAP_KERNEL_LENGTH
+	csetbounds	CHERI_REG_C27, CHERI_REG_C27, t0
+	REG_LI		t0, CHERI_SEALCAP_KERNEL_PERMS
+	candperm	CHERI_REG_C27, CHERI_REG_C27, t0
+	PTR_LA		t0, _C_LABEL(kernel_sealcap)
+	csc		CHERI_REG_C27, t0, 0($ddc)
+
 	nop
 	/* Debug */
 	dla	t0, (DM_BASE + 0x800000)
