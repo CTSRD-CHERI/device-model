@@ -41,6 +41,7 @@
 #include <machine/frame.h>
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
+#include <machine/cheric.h>
 
 #include <mips/mips/timer.h>
 #include <mips/beri/beripic.h>
@@ -55,6 +56,8 @@
 #include "emul.h"
 #include "emul_msgdma.h"
 #include "test.h"
+
+void * __capability kernel_sealcap;
 
 struct beripic_resource beripic1_res = {
 	.cfg = BERIPIC1_CFG,
@@ -143,13 +146,20 @@ app_init(void)
 	int malloc_size;
 	uint64_t *addr;
 	uint32_t status;
+	capability cap;
 
 	/* Debug */
 	addr = (uint64_t *)(DM_BASE + 0x800000);
 	*addr = 0x1515151515161617;
 
-	aju_init(&aju_sc, AJU1_BASE | MIPS_XKPHYS_UNCACHED_BASE);
+	cap = cheri_getdefault();
+	cap = cheri_setoffset(cap, MIPS_XKPHYS_UNCACHED_BASE + AJU1_BASE);
+	cap = cheri_csetbounds(cap, 8);
+
+	aju_init(&aju_sc, cap);
 	console_register(uart_putchar, (void *)&aju_sc);
+
+	CHERI_PRINT_PTR(cap);
 
 	mips_install_intr_map(mips_intr_map);
 
