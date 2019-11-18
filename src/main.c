@@ -165,6 +165,8 @@ app_init(void)
 
 	beripic_init(&beripic_sc, &beripic1_res);
 	beripic_install_intr_map(&beripic_sc, beripic_intr_map);
+
+	/* Enable IPI from FreeBSD. */
 	beripic_enable(&beripic_sc, 16, 0);
 
 	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ,
@@ -188,7 +190,7 @@ app_init(void)
 	/* Enable EPW */
 	epw_control(&epw_sc, 1);
 
-	/* RX FIFO interrupt enable */
+	/* Enable RX FIFO interrupt. */
 	beripic_enable(&beripic_sc, FIFO3_INTR, 0 /* hard IRQ */);
 
 	printf("%s: Initializing malloc\n", __func__);
