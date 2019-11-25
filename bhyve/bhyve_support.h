@@ -34,6 +34,8 @@
 #ifndef	_BHYVE_SUPPORT_H_
 #define	_BHYVE_SUPPORT_H_
 
+#include <bhyve/errno.h>
+
 struct vmctx {
 	int	fd;
 	uint32_t lowmem_limit;

@@ -46,6 +46,7 @@
 
 #include "mem.h"
 #include "pthread.h"
+#include "errno.h"
 
 #define	VM_MAXCPU	1
 
