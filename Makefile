@@ -22,6 +22,10 @@ else
 DM_FLAGS = -DALTERA_MSGDMA_DESC_PF_STD
 endif
 
+ifdef DM_CAP
+DM_FLAGS += -DE1000_DESC_CAP
+endif
+
 export CFLAGS = --target=cheri-unknown-freebsd		\
 	-march=beri -mabi=64 -mcpu=beri -cheri=128	\
 	-cheri-cap-table-abi=pcrel			\

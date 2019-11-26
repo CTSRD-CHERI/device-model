@@ -132,7 +132,12 @@
 
 /* Legacy receive descriptor */
 struct e1000_rx_desc {
+#if defined(E1000_DESC_CAP)
+	uint64_t buffer_addr_lo;
+	uint64_t buffer_addr_hi;
+#else
 	uint64_t buffer_addr;	/* Address of the descriptor's data buffer */
+#endif
 	uint16_t length;	/* Length of data DMAed into data buffer */
 	uint16_t csum;		/* Packet checksum */
 	uint8_t	 status;       	/* Descriptor status */
@@ -153,7 +158,12 @@ struct e1000_rx_desc {
 
 /* Legacy transmit descriptor */
 struct e1000_tx_desc {
+#if defined(E1000_DESC_CAP)
+	uint64_t buffer_addr_lo;
+	uint64_t buffer_addr_hi;
+#else
 	uint64_t buffer_addr;   /* Address of the descriptor's data buffer */
+#endif
 	union {
 		uint32_t data;
 		struct {
@@ -203,7 +213,12 @@ struct e1000_context_desc {
 
 /* Data descriptor */
 struct e1000_data_desc {
+#if defined(E1000_DESC_CAP)
+	uint64_t buffer_addr_lo;
+	uint64_t buffer_addr_hi;
+#else
 	uint64_t buffer_addr;  /* Address of the descriptor's buffer address */
+#endif
 	union {
 		uint32_t data;
 		struct {
@@ -944,8 +959,13 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 		/* Grab rx descriptor pointed to by the head pointer */
 		for (i = 0; i < maxpktdesc; i++) {
 			rxd = &sc->esc_rxdesc[(head + i) % size];
+#if defined(E1000_DESC_CAP)
+			vec[i].iov_base = paddr_guest2host(sc->esc_ctx,
+			    le64toh(rxd->buffer_addr_lo), bufsz);
+#else
 			vec[i].iov_base = paddr_guest2host(sc->esc_ctx,
 			    le64toh(rxd->buffer_addr), bufsz);
+#endif
 			vec[i].iov_len = bufsz;
 		}
 #if 0
@@ -1197,7 +1217,11 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 			case E1000_TXD_TYP_C:
 				DPRINTF("tx ctxt desc idx %d: %016jx "
 				    "%08x%08x\r\n",
+#if defined(E1000_DESC_CAP)
+				    head, le64toh(dsc->td.buffer_addr_lo),
+#else
 				    head, le64toh(dsc->td.buffer_addr),
+#endif
 				    le32toh(dsc->td.upper.data), le32toh(dsc->td.lower.data));
 				/* Save context and return */
 				sc->esc_txctx = dsc->cd;
@@ -1237,8 +1261,15 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 				len -= 2;
 			tlen += len;
 			if (iovcnt < I82545_MAX_TXSEGS) {
+#if defined(E1000_DESC_CAP)
 				iov[iovcnt].iov_base = paddr_guest2host(
-				    sc->esc_ctx, le64toh(dsc->td.buffer_addr), len);
+				    sc->esc_ctx,
+				    le64toh(dsc->td.buffer_addr_lo), len);
+#else
+				iov[iovcnt].iov_base = paddr_guest2host(
+				    sc->esc_ctx,
+				    le64toh(dsc->td.buffer_addr), len);
+#endif
 				iov[iovcnt].iov_len = len;
 			}
 			iovcnt++;
