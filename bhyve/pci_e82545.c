@@ -41,6 +41,9 @@
 #endif
 #include <sys/limits.h>
 #include <sys/uio.h>
+#include <sys/thread.h>
+#include <sys/systm.h>
+#include <sys/sem.h>
 #include <net/ethernet.h>
 
 #include <machine/cpuregs.h>
@@ -382,6 +385,7 @@ struct e82545_softc {
 	struct altera_fifo_softc *fifo_tx;
 	struct altera_fifo_softc *fifo_rx;
 	struct callout mevpitr_callout;
+	struct mdx_semaphore sem;
 };
 
 struct e82545_softc *e82545_sc;
@@ -625,7 +629,7 @@ e82545_itr_callback(void *arg)
 		callout_init(&sc->mevpitr_callout);
 		callout_set(&sc->mevpitr_callout,
 				/* 256ns -> 1ms */
-		    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 1000),
+		    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 500000),
 		    e82545_itr_callback, sc);
 	} else {
 		sc->esc_mevpitr = NULL;
@@ -640,7 +644,7 @@ e82545_icr_assert(struct e82545_softc *sc, uint32_t bits)
 	uint32_t new;
 
 	DPRINTF("icr assert: 0x%x\r\n", bits);
-	
+
 	/*
 	 * An interrupt is only generated if bits are set that
 	 * aren't already in the ICR, these bits are unmasked,
@@ -652,7 +656,8 @@ e82545_icr_assert(struct e82545_softc *sc, uint32_t bits)
 	if (new == 0) {
 		DPRINTF("icr assert: masked %x, ims %x\r\n", new, sc->esc_IMS);
 	} else if (sc->esc_mevpitr != NULL) {
-		DPRINTF("icr assert: throttled %x, ims %x\r\n", new, sc->esc_IMS);
+		DPRINTF("icr assert: throttled %x, ims %x\r\n",
+		    new, sc->esc_IMS);
 	} else if (!sc->esc_irq_asserted) {
 		DPRINTF("icr assert: lintr assert %x\r\n", new);
 		sc->esc_irq_asserted = 1;
@@ -662,7 +667,7 @@ e82545_icr_assert(struct e82545_softc *sc, uint32_t bits)
 			callout_init(&sc->mevpitr_callout);
 			callout_set(&sc->mevpitr_callout,
 					/* 256ns -> 1ms */
-			    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 1000),
+			    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 500000),
 			    e82545_itr_callback, sc);
 
 #if 0
@@ -699,7 +704,7 @@ e82545_ims_change(struct e82545_softc *sc, uint32_t bits)
 			callout_init(&sc->mevpitr_callout);
 			callout_set(&sc->mevpitr_callout,
 					/* 256ns -> 1ms */
-			    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 1000),
+			    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 500000),
 			    e82545_itr_callback, sc);
 
 #if 0
@@ -734,22 +739,27 @@ e82545_intr_write(struct e82545_softc *sc, uint32_t offset, uint32_t value)
 {
 
 	DPRINTF("intr_write: off %x, val %x\n\r", offset, value);
-	
+
 	switch (offset) {
 	case E1000_ICR:
+		DPRINTF("%s: E1000_ICR %x\n", __func__, value);
 		e82545_icr_deassert(sc, value);
 		break;
 	case E1000_ITR:
+		DPRINTF("%s: E1000_ITR %x\n", __func__, value);
 		sc->esc_ITR = value;
 		break;
 	case E1000_ICS:
+		DPRINTF("%s: E1000_ICS %x\n", __func__, value);
 		sc->esc_ICS = value;	/* not used: store for debug */
 		e82545_icr_assert(sc, value);
 		break;
 	case E1000_IMS:
+		DPRINTF("%s: E1000_IMS %x\n", __func__, value);
 		e82545_ims_change(sc, value);
 		break;
 	case E1000_IMC:
+		DPRINTF("%s: E1000_IMC %x\n", __func__, value);
 		sc->esc_IMC = value;	/* for debug */
 		sc->esc_IMS &= ~value;
 		// XXX clear interrupts if all ICR bits now masked
@@ -1603,11 +1613,41 @@ e1000_poll(void)
 	intr_restore(intr);
 }
 
+static void
+e1000_fifo_work(void *arg)
+{
+	struct e82545_softc *sc;
+	int reg;
+
+	sc = arg;
+
+	printf("%s: startup\n", __func__);
+                
+	while (1) {
+		mdx_sem_wait(&sc->sem);
+
+		reg = intr_disable();
+		e82545_rx_poll(sc);
+		intr_restore(reg);
+	}
+}
+
+static void
+e1000_fifo_intr(void *arg)
+{
+	struct e82545_softc *sc;
+ 
+	sc = arg;
+ 
+	mdx_sem_post(&sc->sem);
+}
+
 int
 e82545_setup_fifo(struct altera_fifo_softc *fifo_tx,
     struct altera_fifo_softc *fifo_rx)
 {
 	struct e82545_softc *sc;
+	struct thread *td;
 
 	sc = e82545_sc;
 	if (sc == NULL)
@@ -1619,8 +1659,17 @@ e82545_setup_fifo(struct altera_fifo_softc *fifo_tx,
 	fifo_interrupts_disable(fifo_tx);
 	fifo_interrupts_disable(fifo_rx);
 
+	mdx_sem_init(&sc->sem, 1);
+
+	td = mdx_thread_create("work", 1, USEC_TO_TICKS(100000),
+	    4096, e1000_fifo_work, sc);
+	if (td == NULL)
+		return (-1);   
+
+	mdx_sched_add(td);
+
 	printf("%s: Enabling RX interrupts\n", __func__);
-	fifo_rx->cb = e82545_rx_poll;
+	fifo_rx->cb = e1000_fifo_intr;
 	fifo_rx->cb_arg = sc;
 	fifo_interrupts_enable(fifo_rx, FIFO_RX_EVENTS);
 
