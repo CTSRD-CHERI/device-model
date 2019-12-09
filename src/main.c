@@ -157,7 +157,7 @@ app_init(void)
 	cap = cheri_csetbounds(cap, 8);
 
 	aju_init(&aju_sc, cap);
-	console_register(uart_putchar, (void *)&aju_sc);
+	mdx_console_register(uart_putchar, (void *)&aju_sc);
 
 	CHERI_PRINT_PTR(cap);
 

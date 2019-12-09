@@ -39,7 +39,7 @@ export CFLAGS = --target=cheri-unknown-freebsd		\
 	${DM_FLAGS} -DWITHOUT_CAPSICUM=1		\
 	-DDM_BASE=${DM_BASE}
 
-export ASFLAGS = ${CFLAGS}
+export AFLAGS = ${CFLAGS}
 
 all:	${LDSCRIPT}
 	@python3 -B ${OSDIR}/tools/emitter.py mdepx.conf
