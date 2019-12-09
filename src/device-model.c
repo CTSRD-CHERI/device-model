@@ -150,10 +150,12 @@ dm_init(struct epw_softc *sc)
 	msgdma1_sc.fifo_sc = &fifo1_sc;
 	msgdma1_sc.iommu_sc = &iommu1_sc;
 
-	error = emul_msgdma_rx_init(&msgdma1_sc);
-	if (error)
-		panic("Can't setup msgdma\n");
+	/*
+	 * We could emulate PCI or mSGDMA, but not together simultaneously
+	 * since they setup interrupt handler for the same FIFO RX channel.
+	 */
 
+#ifdef CONFIG_EMUL_PCI
 	error = emul_pci_init(&pci0_sc);
 	if (error)
 		panic("Can't init PCI\n");
@@ -163,6 +165,11 @@ dm_init(struct epw_softc *sc)
 	error = e82545_setup_fifo(&fifo0_sc, &fifo1_sc);
 	if (error)
 		panic("Can't setup FIFOs\n");
+#else
+	error = emul_msgdma_rx_init(&msgdma1_sc);
+	if (error)
+		panic("Can't setup msgdma\n");
+#endif
 
 	printf("%s: device-model initialized\n", __func__);
 }
@@ -187,14 +194,17 @@ dm_loop(struct epw_softc *sc)
 			critical_exit();
 		}
 
-		/* Poll mSGDMA TX/RX descriptors. */
-		emul_msgdma_poll(&msgdma0_sc);
-		emul_msgdma_poll(&msgdma1_sc);
-
+#ifdef CONFIG_EMUL_PCI
 		/* Poll Intel E1000 descriptors. */
 		e1000_poll();
 
 		/* Poll for AHCI SATA request. */
 		blockif_thr(NULL);
+#else
+		/* Poll mSGDMA TX/RX descriptors. */
+		emul_msgdma_poll(&msgdma0_sc);
+		emul_msgdma_poll(&msgdma1_sc);
+
+#endif
 	}
 }

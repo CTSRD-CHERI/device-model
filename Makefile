@@ -22,6 +22,10 @@ else
 DM_FLAGS = -DALTERA_MSGDMA_DESC_PF_STD
 endif
 
+ifdef DM_PCI
+DM_FLAGS += -DCONFIG_EMUL_PCI
+endif
+
 ifdef DM_CAP
 DM_FLAGS += -DE1000_DESC_CAP
 endif
