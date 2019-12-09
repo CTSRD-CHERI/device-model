@@ -147,7 +147,11 @@ paddr_guest2host(struct vmctx *ctx, uintptr_t gaddr, size_t len)
 {
 	uintptr_t addr;
 
+#ifdef CONFIG_IOMMU
+	addr = gaddr;
+#else
 	addr = gaddr | MIPS_XKPHYS_UNCACHED_BASE;
+#endif
 
 	dprintf("%s: gaddr %lx, addr %lx, len %d\n",
 	    __func__, gaddr, addr, len);
