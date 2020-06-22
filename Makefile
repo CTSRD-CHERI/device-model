@@ -1,10 +1,14 @@
 APP =		device-model
 MACHINE =	mips
 
-export CC =	clang-cheri
-export LD =	ld.lld-cheri
-OBJCOPY =	llvm-objcopy-cheri
-SIZE =		llvm-size60
+TRIPLE =	cheri-unknown-freebsd-
+export CC=	${TRIPLE}clang
+export LD =	${TRIPLE}ld.lld
+OBJCOPY =	llvm-objcopy
+OBJDUMP =	${TRIPLE}llvm-objdump
+SIZE =		llvm-size
+
+CROSS_COMPILE =	${CC}
 
 OBJDIR =	obj
 OSDIR =		mdepx
@@ -54,7 +58,7 @@ ${LDSCRIPT}:
 	@sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_TPL} > ${LDSCRIPT}
 
 llvm-objdump:
-	llvm-objdump-cheri -d ${OBJDIR}/${APP}.elf | less
+	@${OBJDUMP} -d ${OBJDIR}/${APP}.elf | less
 
 clean:
 	@rm -rf obj/*
