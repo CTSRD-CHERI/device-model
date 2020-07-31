@@ -804,7 +804,7 @@ read_prdt(struct ahci_port *p, int slot, uint8_t *cfis,
 		sublen = MIN(len, dbcsz);
 		memcpy(to, ptr, sublen);
 		len -= sublen;
-		to = (void *)(uint64_t)((int)to + sublen);
+		to = (void *)((uintptr_t)to + sublen);
 		prdt++;
 	}
 }
@@ -918,7 +918,7 @@ write_prdt(struct ahci_port *p, int slot, uint8_t *cfis,
 		sublen = MIN(len, dbcsz);
 		memcpy(ptr, from, sublen);
 		len -= sublen;
-		from = (void *)(uint64_t)((int)from + sublen);
+		from = (void *)((uintptr_t)from + sublen);
 		prdt++;
 	}
 	hdr->prdbc = size - len;
