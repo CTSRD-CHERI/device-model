@@ -1,14 +1,13 @@
 APP =		device-model
 MACHINE =	mips
 
-TRIPLE =	cheri-unknown-freebsd-
-export CC=	${TRIPLE}clang
-export LD =	${TRIPLE}ld.lld
-OBJCOPY =	llvm-objcopy
-OBJDUMP =	${TRIPLE}llvm-objdump
-SIZE =		llvm-size
+TRIPLE ?=	mips64-unknown-freebsd-
 
-CROSS_COMPILE =	${CC}
+export CC =	${TRIPLE}clang
+export LD =	${TRIPLE}ld.lld
+OBJCOPY =	${TRIPLE}objcopy
+OBJDUMP =	${TRIPLE}objdump
+SIZE =		llvm-size-cheri
 
 OBJDIR =	obj
 OSDIR =		mdepx
@@ -34,9 +33,8 @@ ifdef DM_CAP
 DM_FLAGS += -DE1000_DESC_CAP
 endif
 
-export CFLAGS = --target=cheri-unknown-freebsd		\
+export CFLAGS = --target=mips64c128-unknown-freebsd	\
 	-march=beri -mabi=64 -mcpu=beri -cheri=128	\
-	-cheri-cap-table-abi=pcrel			\
 	-ftls-model=local-exec -nostdinc -G0		\
 	-O0 -g						\
 	-fno-builtin-printf -ffreestanding		\
