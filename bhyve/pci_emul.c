@@ -42,6 +42,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include <freebsd_cdefs.h>
 #include "inout.h"
 #include "mem.h"
 #include "pci_emul.h"

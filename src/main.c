@@ -102,17 +102,6 @@ ipi_from_freebsd(void *arg)
 	cpu_reset();
 }
 
-static const struct mips_intr_entry mips_intr_map[MIPS_N_INTR] = {
-	[0] = { softintr, NULL },
-	[1] = { softintr, NULL },
-	[2] = { beripic_intr, (void *)&beripic_sc },
-	[3] = { hardintr, NULL },
-	[4] = { hardintr, NULL },
-	[5] = { hardintr, NULL },
-	[6] = { hardintr, NULL },
-	[7] = { mips_timer_intr, (void *)&timer_sc },
-};
-
 static const struct beripic_intr_entry beripic_intr_map[BERIPIC_NIRQS] = {
 	[11] = { altera_fifo_intr, (void *)&fifo1_sc },	/* rx */
 	[12] = { altera_fifo_intr, (void *)&fifo0_sc },	/* tx */
@@ -139,8 +128,8 @@ udelay(uint32_t usec)
 	mips_timer_udelay(&timer_sc, usec);
 }
 
-int
-app_init(void)
+void
+board_init(void)
 {
 	uintptr_t malloc_base;
 	int malloc_size;
@@ -161,7 +150,14 @@ app_init(void)
 
 	CHERI_PRINT_PTR(cap);
 
-	mips_install_intr_map(mips_intr_map);
+	mips_setup_intr(0, softintr, NULL);
+	mips_setup_intr(1, softintr, NULL);
+	mips_setup_intr(2, beripic_intr, (void *)&beripic_sc);
+	mips_setup_intr(3, hardintr, NULL);
+	mips_setup_intr(4, hardintr, NULL);
+	mips_setup_intr(5, hardintr, NULL);
+	mips_setup_intr(6, hardintr, NULL);
+	mips_setup_intr(7, mips_timer_intr, (void *)&timer_sc);
 
 	beripic_init(&beripic_sc, &beripic1_res);
 	beripic_install_intr_map(&beripic_sc, beripic_intr_map);
@@ -169,8 +165,7 @@ app_init(void)
 	/* Enable IPI from FreeBSD. */
 	beripic_enable(&beripic_sc, 16, 0);
 
-	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ,
-	    USEC_TO_TICKS(1));
+	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ);
 
 	status = mips_rd_status();
 	status |= MIPS_SR_IM_HARD(0);
@@ -198,8 +193,6 @@ app_init(void)
 	malloc_base = DM_BASE + 0x01000000/2;
 	malloc_size = 0x01000000/2;
 	malloc_add_region(malloc_base, malloc_size);
-
-	return (0);
 }
 
 #if 1
@@ -254,6 +247,23 @@ main(void)
 {
 
 	printf("%s\n", __func__);
+
+#if 0
+	printf("sleeping 1 sec\n");
+	mdx_usleep(1000000);
+	printf("sleeping 1 sec done\n");
+
+	printf("sleeping 2 sec\n");
+	mdx_usleep(2000000);
+	printf("sleeping 2 sec done\n");
+
+	int i;
+	for (i = 0; i < 10; i++) {
+		printf("sleeping 1 sec\n");
+		mdx_usleep(1000000);
+		printf("sleeping 1 sec done\n");
+	}
+#endif
 
 	dm_init(&epw_sc);
 	dm_loop(&epw_sc);

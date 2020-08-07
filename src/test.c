@@ -35,7 +35,7 @@
 
 #include "test.h"
 
-static struct callout c0;
+static struct mdx_callout c0;
 
 static void
 callout_done(void *arg)
@@ -43,8 +43,8 @@ callout_done(void *arg)
 
 	printf("done %p\n", arg);
 
-	callout_init(&c0);
-	callout_set(&c0, 100000000, callout_done, (void *)0);
+	mdx_callout_init(&c0);
+	mdx_callout_set(&c0, 100000000, callout_done, (void *)0);
 }
 
 void
@@ -54,8 +54,8 @@ test_callout(void)
 
 	printf("Scheduling an 1 sec timeout\n");
 
-	callout_init(&c0);
-	callout_set(&c0, 100000000, callout_done, (void *)0);
+	mdx_callout_init(&c0);
+	mdx_callout_set(&c0, 100000000, callout_done, (void *)0);
 
 	printf("Starting test code loop\n");
 

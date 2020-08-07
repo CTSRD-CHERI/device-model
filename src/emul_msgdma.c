@@ -385,8 +385,7 @@ emul_msgdma_rx_init(struct msgdma_softc *sc)
 
 	mdx_sem_init(&sc->sem, 1);
 
-	td = mdx_thread_create("work", 1, USEC_TO_TICKS(100000),
-	    4096, emul_msgdma_work, sc);
+	td = mdx_thread_create("work", 1, 100000, 4096, emul_msgdma_work, sc);
 	if (td == NULL)
 		return (-1);
 

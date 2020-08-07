@@ -82,7 +82,6 @@
 #define	BERIPIC1_IP_CLEAR	0xff7f80a100
 
 #define	MIPS_DEFAULT_FREQ	100000000 /* 100 MHz */
-#define	USEC_TO_TICKS(n)	((n) * 100)
 
 void cpu_reset(void);
 

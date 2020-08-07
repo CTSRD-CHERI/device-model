@@ -384,7 +384,7 @@ struct e82545_softc {
 	/* Device-model data */
 	struct altera_fifo_softc *fifo_tx;
 	struct altera_fifo_softc *fifo_rx;
-	struct callout mevpitr_callout;
+	struct mdx_callout mevpitr_callout;
 	struct mdx_semaphore sem;
 };
 
@@ -626,10 +626,10 @@ e82545_itr_callback(void *arg)
 		sc->esc_irq_asserted = 1;
 		pci_lintr_assert(sc->esc_pi);
 
-		callout_init(&sc->mevpitr_callout);
-		callout_set(&sc->mevpitr_callout,
+		mdx_callout_init(&sc->mevpitr_callout);
+		mdx_callout_set(&sc->mevpitr_callout,
 				/* 256ns -> 1ms */
-		    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 500000),
+		    ((sc->esc_ITR + 3905) / 3906) * 500000,
 		    e82545_itr_callback, sc);
 	} else {
 		sc->esc_mevpitr = NULL;
@@ -664,10 +664,10 @@ e82545_icr_assert(struct e82545_softc *sc, uint32_t bits)
 		pci_lintr_assert(sc->esc_pi);
 		if (sc->esc_ITR != 0) {
 			sc->esc_mevpitr = (void *)1;
-			callout_init(&sc->mevpitr_callout);
-			callout_set(&sc->mevpitr_callout,
+			mdx_callout_init(&sc->mevpitr_callout);
+			mdx_callout_set(&sc->mevpitr_callout,
 					/* 256ns -> 1ms */
-			    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 500000),
+			    (((sc->esc_ITR + 3905) / 3906) * 500000),
 			    e82545_itr_callback, sc);
 
 #if 0
@@ -701,10 +701,10 @@ e82545_ims_change(struct e82545_softc *sc, uint32_t bits)
 		pci_lintr_assert(sc->esc_pi);
 		if (sc->esc_ITR != 0) {
 			sc->esc_mevpitr = (void *)1;
-			callout_init(&sc->mevpitr_callout);
-			callout_set(&sc->mevpitr_callout,
+			mdx_callout_init(&sc->mevpitr_callout);
+			mdx_callout_set(&sc->mevpitr_callout,
 					/* 256ns -> 1ms */
-			    USEC_TO_TICKS(((sc->esc_ITR + 3905) / 3906) * 500000),
+			    (((sc->esc_ITR + 3905) / 3906) * 500000),
 			    e82545_itr_callback, sc);
 
 #if 0
@@ -1661,7 +1661,7 @@ e82545_setup_fifo(struct altera_fifo_softc *fifo_tx,
 
 	mdx_sem_init(&sc->sem, 1);
 
-	td = mdx_thread_create("work", 1, USEC_TO_TICKS(100000),
+	td = mdx_thread_create("work", 1, 100000,
 	    4096, e1000_fifo_work, sc);
 	if (td == NULL)
 		return (-1);   
