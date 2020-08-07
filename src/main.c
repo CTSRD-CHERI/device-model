@@ -248,23 +248,6 @@ main(void)
 
 	printf("%s\n", __func__);
 
-#if 0
-	printf("sleeping 1 sec\n");
-	mdx_usleep(1000000);
-	printf("sleeping 1 sec done\n");
-
-	printf("sleeping 2 sec\n");
-	mdx_usleep(2000000);
-	printf("sleeping 2 sec done\n");
-
-	int i;
-	for (i = 0; i < 10; i++) {
-		printf("sleeping 1 sec\n");
-		mdx_usleep(1000000);
-		printf("sleeping 1 sec done\n");
-	}
-#endif
-
 	dm_init(&epw_sc);
 	dm_loop(&epw_sc);
 
