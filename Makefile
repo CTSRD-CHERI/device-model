@@ -33,18 +33,7 @@ ifdef DM_CAP
 DM_FLAGS += -DE1000_DESC_CAP
 endif
 
-export CFLAGS = --target=mips64c128-unknown-freebsd	\
-	-march=beri -mabi=64 -mcpu=beri -cheri=128	\
-	-ftls-model=local-exec -nostdinc -G0		\
-	-O0 -g						\
-	-fno-builtin-printf -ffreestanding		\
-	-msoft-float -fwrapv				\
-	-fomit-frame-pointer -D__mips_n64 -nostdlib	\
-	-DBASE_ADDR=0xffffffff80100000			\
-	-mno-abicalls -fno-pic				\
-	${DM_FLAGS} -DWITHOUT_CAPSICUM=1		\
-	-DDM_BASE=${DM_BASE}
-
+export CFLAGS = ${DM_FLAGS} -DDM_BASE=${DM_BASE}
 export AFLAGS = ${CFLAGS}
 
 all:	${LDSCRIPT}
