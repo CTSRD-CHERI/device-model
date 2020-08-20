@@ -192,7 +192,7 @@ board_init(void)
 	malloc_init();
 	malloc_base = DM_BASE + 0x01000000/2;
 	malloc_size = 0x01000000/2;
-	malloc_add_region(malloc_base, malloc_size);
+	malloc_add_region((void *)malloc_base, malloc_size);
 }
 
 #if 1
