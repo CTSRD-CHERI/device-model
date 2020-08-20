@@ -41,6 +41,11 @@ all:	${LDSCRIPT}
 	@${OBJCOPY} -O binary obj/${APP}.elf obj/${APP}.bin
 	@${SIZE} obj/${APP}.elf
 
+pure:	${LDSCRIPT}
+	@python3 -B ${OSDIR}/tools/emitter.py mdepx-pure.conf
+	@${OBJCOPY} -O binary obj/${APP}.elf obj/${APP}.bin
+	@${SIZE} obj/${APP}.elf
+
 ${LDSCRIPT}:
 	@sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_TPL} > ${LDSCRIPT}
 
