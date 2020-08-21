@@ -59,12 +59,7 @@
 
 void * __capability kernel_sealcap;
 
-struct beripic_resource beripic1_res = {
-	.cfg = BERIPIC1_CFG | MIPS_XKPHYS_UNCACHED_BASE,
-	.ip_read = BERIPIC1_IP_READ | MIPS_XKPHYS_UNCACHED_BASE,
-	.ip_set = BERIPIC1_IP_SET | MIPS_XKPHYS_UNCACHED_BASE,
-	.ip_clear = BERIPIC1_IP_CLEAR | MIPS_XKPHYS_UNCACHED_BASE,
-};
+struct beripic_resource beripic1_res;
 
 static struct aju_softc aju_sc;
 static struct beripic_softc beripic_sc;
@@ -160,6 +155,16 @@ board_init(void)
 	mips_setup_intr(5, hardintr, NULL);
 	mips_setup_intr(6, hardintr, NULL);
 	mips_setup_intr(7, mips_timer_intr, (void *)&timer_sc);
+
+	cap = cheri_getdefault();
+	beripic1_res.cfg = cheri_setoffset(cap,
+	    BERIPIC1_CFG | MIPS_XKPHYS_UNCACHED_BASE);
+	beripic1_res.ip_read = cheri_setoffset(cap,
+	    BERIPIC1_IP_READ | MIPS_XKPHYS_UNCACHED_BASE);
+	beripic1_res.ip_set = cheri_setoffset(cap,
+	    BERIPIC1_IP_SET | MIPS_XKPHYS_UNCACHED_BASE);
+	beripic1_res.ip_clear = cheri_setoffset(cap,
+	    BERIPIC1_IP_CLEAR | MIPS_XKPHYS_UNCACHED_BASE);
 
 	beripic_init(&beripic, &beripic1_res);
 	beripic_install_intr_map(&beripic, beripic_intr_map);
