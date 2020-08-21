@@ -60,10 +60,10 @@
 void * __capability kernel_sealcap;
 
 struct beripic_resource beripic1_res = {
-	.cfg = BERIPIC1_CFG,
-	.ip_read = BERIPIC1_IP_READ,
-	.ip_set = BERIPIC1_IP_SET,
-	.ip_clear = BERIPIC1_IP_CLEAR,
+	.cfg = BERIPIC1_CFG | MIPS_XKPHYS_UNCACHED_BASE,
+	.ip_read = BERIPIC1_IP_READ | MIPS_XKPHYS_UNCACHED_BASE,
+	.ip_set = BERIPIC1_IP_SET | MIPS_XKPHYS_UNCACHED_BASE,
+	.ip_clear = BERIPIC1_IP_CLEAR | MIPS_XKPHYS_UNCACHED_BASE,
 };
 
 static struct aju_softc aju_sc;
