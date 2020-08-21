@@ -74,6 +74,8 @@ static struct mips_timer_softc timer_sc;
 extern struct altera_fifo_softc fifo0_sc;
 extern struct altera_fifo_softc fifo1_sc;
 
+static struct mdx_device beripic = { .sc = &beripic_sc };
+
 static void
 softintr(void *arg, struct trapframe *frame, int i)
 {
@@ -152,18 +154,18 @@ board_init(void)
 
 	mips_setup_intr(0, softintr, NULL);
 	mips_setup_intr(1, softintr, NULL);
-	mips_setup_intr(2, beripic_intr, (void *)&beripic_sc);
+	mips_setup_intr(2, beripic_intr, (void *)&beripic);
 	mips_setup_intr(3, hardintr, NULL);
 	mips_setup_intr(4, hardintr, NULL);
 	mips_setup_intr(5, hardintr, NULL);
 	mips_setup_intr(6, hardintr, NULL);
 	mips_setup_intr(7, mips_timer_intr, (void *)&timer_sc);
 
-	beripic_init(&beripic_sc, &beripic1_res);
-	beripic_install_intr_map(&beripic_sc, beripic_intr_map);
+	beripic_init(&beripic, &beripic1_res);
+	beripic_install_intr_map(&beripic, beripic_intr_map);
 
 	/* Enable IPI from FreeBSD. */
-	beripic_enable(&beripic_sc, 16, 0);
+	beripic_enable(&beripic, 16, 0);
 
 	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ);
 
@@ -186,7 +188,7 @@ board_init(void)
 	epw_control(&epw_sc, 1);
 
 	/* Enable RX FIFO interrupt. */
-	beripic_enable(&beripic_sc, FIFO3_INTR, 0 /* hard IRQ */);
+	beripic_enable(&beripic, FIFO3_INTR, 0 /* hard IRQ */);
 
 	printf("%s: Initializing malloc\n", __func__);
 	malloc_init();
