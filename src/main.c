@@ -59,17 +59,21 @@
 
 void * __capability kernel_sealcap;
 
+struct beripic_resource beripic0_res;
 struct beripic_resource beripic1_res;
 
+static struct beripic_softc beripic0_sc;
+static struct beripic_softc beripic1_sc;
+
+struct mdx_device beripic0 = { .sc = &beripic0_sc };
+struct mdx_device beripic1 = { .sc = &beripic1_sc };
+
 static struct aju_softc aju_sc;
-static struct beripic_softc beripic_sc;
 static struct epw_softc epw_sc;
 static struct mips_timer_softc timer_sc;
 
 extern struct altera_fifo_softc fifo0_sc;
 extern struct altera_fifo_softc fifo1_sc;
-
-static struct mdx_device beripic = { .sc = &beripic_sc };
 
 static void
 softintr(void *arg, struct trapframe *frame, int i)
@@ -149,7 +153,7 @@ board_init(void)
 
 	mips_setup_intr(0, softintr, NULL);
 	mips_setup_intr(1, softintr, NULL);
-	mips_setup_intr(2, beripic_intr, (void *)&beripic);
+	mips_setup_intr(2, beripic_intr, (void *)&beripic1);
 	mips_setup_intr(3, hardintr, NULL);
 	mips_setup_intr(4, hardintr, NULL);
 	mips_setup_intr(5, hardintr, NULL);
@@ -157,6 +161,8 @@ board_init(void)
 	mips_setup_intr(7, mips_timer_intr, (void *)&timer_sc);
 
 	cap = cheri_getdefault();
+
+	/* The beripic of this CPU core. */
 	beripic1_res.cfg = cheri_setoffset(cap,
 	    BERIPIC1_CFG | MIPS_XKPHYS_UNCACHED_BASE);
 	beripic1_res.ip_read = cheri_setoffset(cap,
@@ -165,12 +171,22 @@ board_init(void)
 	    BERIPIC1_IP_SET | MIPS_XKPHYS_UNCACHED_BASE);
 	beripic1_res.ip_clear = cheri_setoffset(cap,
 	    BERIPIC1_IP_CLEAR | MIPS_XKPHYS_UNCACHED_BASE);
+	beripic_init(&beripic1, &beripic1_res);
+	beripic_install_intr_map(&beripic1, beripic_intr_map);
 
-	beripic_init(&beripic, &beripic1_res);
-	beripic_install_intr_map(&beripic, beripic_intr_map);
+	/* The beripic of the main core (FreeBSD). */
+	beripic0_res.cfg = cheri_setoffset(cap,
+	    BERIPIC0_CFG | MIPS_XKPHYS_UNCACHED_BASE);
+	beripic0_res.ip_read = cheri_setoffset(cap,
+	    BERIPIC0_IP_READ | MIPS_XKPHYS_UNCACHED_BASE);
+	beripic0_res.ip_set = cheri_setoffset(cap,
+	    BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE);
+	beripic0_res.ip_clear = cheri_setoffset(cap,
+	    BERIPIC0_IP_CLEAR | MIPS_XKPHYS_UNCACHED_BASE);
+	beripic_init(&beripic0, &beripic0_res);
 
 	/* Enable IPI from FreeBSD. */
-	beripic_enable(&beripic, 16, 0);
+	beripic_enable(&beripic1, 16, 0);
 
 	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ);
 
@@ -193,7 +209,7 @@ board_init(void)
 	epw_control(&epw_sc, 1);
 
 	/* Enable RX FIFO interrupt. */
-	beripic_enable(&beripic, FIFO3_INTR, 0 /* hard IRQ */);
+	beripic_enable(&beripic1, FIFO3_INTR, 0 /* hard IRQ */);
 
 	printf("%s: Initializing malloc\n", __func__);
 	malloc_init();

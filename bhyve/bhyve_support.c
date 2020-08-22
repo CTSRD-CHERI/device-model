@@ -34,7 +34,10 @@
 #include <sys/cdefs.h>
 #include <sys/malloc.h>
 
+#include <machine/frame.h>
+
 #include <mips/beri/beri_epw.h>
+#include <mips/beri/beripic.h>
 
 #include <machine/cpuregs.h>
 
@@ -56,36 +59,44 @@
 #define	dprintf(fmt, ...)
 #endif
 
+extern struct mdx_device beripic0;
+
 void
 pci_irq_assert(struct pci_devinst *pi)
 {
-	uint64_t addr;
+	uint32_t irq;
 
 	dprintf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
 
-	addr = BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE;
+	irq = 0;
 
 	if (strcmp(pi->pi_name, "ahci-hd-pci-1") == 0)
-		*(volatile uint64_t *)(addr) = (1 << DM_AHCI_INTR);
+		irq = DM_AHCI_INTR;
 	else if (strcmp(pi->pi_name, "e1000-pci-0") == 0)
-		*(volatile uint64_t *)(addr) = (1 << DM_E1000_INTR);
+		irq = DM_E1000_INTR;
+
+	if (irq)
+		beripic_ip_set(&beripic0, irq);
 }
 
 void
 pci_irq_deassert(struct pci_devinst *pi)
 {
-	uint64_t addr;
+	uint32_t irq;
 
 	dprintf("%s: pi_name %s pi_bus %d pi_slot %d pi_func %d\n",
 	    __func__, pi->pi_name, pi->pi_bus, pi->pi_slot, pi->pi_func);
 
-	addr = BERIPIC0_IP_CLEAR | MIPS_XKPHYS_UNCACHED_BASE;
+	irq = 0;
 
 	if (strcmp(pi->pi_name, "ahci-hd-pci-1") == 0)
-		*(volatile uint64_t *)(addr) = (1 << DM_AHCI_INTR);
+		irq = DM_AHCI_INTR;
 	else if (strcmp(pi->pi_name, "e1000-pci-0") == 0)
-		*(volatile uint64_t *)(addr) = (1 << DM_E1000_INTR);
+		irq = DM_E1000_INTR;
+
+	if (irq)
+		beripic_ip_clear(&beripic0, irq);
 }
 
 int
