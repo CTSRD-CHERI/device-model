@@ -62,8 +62,8 @@ void * __capability kernel_sealcap;
 struct beripic_resource beripic0_res;
 struct beripic_resource beripic1_res;
 
-static struct beripic_softc beripic0_sc;
-static struct beripic_softc beripic1_sc;
+static struct beripic_softc beripic0_sc = { .res = &beripic0_res };
+static struct beripic_softc beripic1_sc = { .res = &beripic1_res };
 
 struct mdx_device beripic0 = { .sc = &beripic0_sc };
 struct mdx_device beripic1 = { .sc = &beripic1_sc };
@@ -174,7 +174,10 @@ board_init(void)
 	beripic_init(&beripic1, &beripic1_res);
 	beripic_install_intr_map(&beripic1, beripic_intr_map);
 
-	/* The beripic of the main core (FreeBSD). */
+	/*
+	 * The beripic of the main core (FreeBSD).
+	 * It does not require beripic_init().
+	 */
 	beripic0_res.cfg = cheri_setoffset(cap,
 	    BERIPIC0_CFG | MIPS_XKPHYS_UNCACHED_BASE);
 	beripic0_res.ip_read = cheri_setoffset(cap,
@@ -183,7 +186,6 @@ board_init(void)
 	    BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE);
 	beripic0_res.ip_clear = cheri_setoffset(cap,
 	    BERIPIC0_IP_CLEAR | MIPS_XKPHYS_UNCACHED_BASE);
-	beripic_init(&beripic0, &beripic0_res);
 
 	/* Enable IPI from FreeBSD. */
 	beripic_enable(&beripic1, 16, 0);
