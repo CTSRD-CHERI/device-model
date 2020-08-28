@@ -34,6 +34,7 @@
 #include <sys/cdefs.h>
 #include <sys/systm.h>
 #include <sys/malloc.h>
+#include <sys/cheri.h>
 
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
@@ -130,20 +131,33 @@ dm_request(struct epw_softc *sc, struct epw_request *req)
 void
 dm_init(struct epw_softc *sc)
 {
+	capability cap;
 	int error;
 
 	printf("%s\n", __func__);
 
-	fifo0_sc.fifo_base_mem = FIFO2_BASE_MEM;
-	fifo0_sc.fifo_base_ctrl = FIFO2_BASE_CTRL;
+	cap = cheri_getdefault();
+
+	fifo0_sc.fifo_base_mem =
+	    cheri_setoffset(cap, FIFO2_BASE_MEM | MIPS_XKPHYS_UNCACHED_BASE);
+	fifo0_sc.fifo_base_mem_cached =
+	    cheri_setoffset(cap, FIFO2_BASE_MEM | MIPS_XKPHYS_CACHED_BASE);
+	fifo0_sc.fifo_base_ctrl =
+	    cheri_setoffset(cap, FIFO2_BASE_CTRL | MIPS_XKPHYS_UNCACHED_BASE);
+
 	fifo0_sc.unit = 0;
 	iommu0_sc.unit = 0;
 	msgdma0_sc.unit = 0;
 	msgdma0_sc.fifo_sc = &fifo0_sc;
 	msgdma0_sc.iommu_sc = &iommu0_sc;
 
-	fifo1_sc.fifo_base_mem = FIFO3_BASE_MEM;
-	fifo1_sc.fifo_base_ctrl = FIFO3_BASE_CTRL;
+	fifo1_sc.fifo_base_mem =
+	    cheri_setoffset(cap, FIFO3_BASE_MEM | MIPS_XKPHYS_UNCACHED_BASE);
+	fifo1_sc.fifo_base_mem_cached =
+	    cheri_setoffset(cap, FIFO3_BASE_MEM | MIPS_XKPHYS_CACHED_BASE);
+	fifo1_sc.fifo_base_ctrl =
+	    cheri_setoffset(cap, FIFO3_BASE_CTRL | MIPS_XKPHYS_UNCACHED_BASE);
+
 	fifo1_sc.unit = 1;
 	iommu1_sc.unit = 1;
 	msgdma1_sc.unit = 1;

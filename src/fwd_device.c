@@ -33,6 +33,7 @@
 
 #include <sys/cdefs.h>
 #include <sys/systm.h>
+#include <sys/cheri.h>
 
 #include <mips/beri/beri_epw.h>
 
@@ -43,15 +44,22 @@ static void
 fwd_rw(struct epw_softc *sc, struct epw_request *req,
     uint64_t addr)
 {
+	void *cap;
 	void *src, *dst;
 	int len;
 
+#ifdef __CHERI_PURE_CAPABILITY__
+	cap = cheri_setoffset(cheri_getdefault(), addr);
+#else
+	cap = (void *)addr;
+#endif
+
 	if (req->is_write) {
 		src = &req->data;
-		dst = (void *)addr;
+		dst = (void *)cap;
 		len = req->byte_enable;
 	} else {
-		src = (void *)addr;
+		src = (void *)cap;
 		dst = &req->data;
 		len = req->burst_count;
 	}

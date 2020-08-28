@@ -34,6 +34,7 @@
 #include <sys/cdefs.h>
 #include <sys/systm.h>
 #include <sys/endian.h>
+#include <sys/cheri.h>
 
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
@@ -173,6 +174,8 @@ emul_pci_init(struct pci_softc *sc)
 	sc->ctx = malloc(sizeof(struct vmctx));
 	if (sc->ctx == NULL)
 		return (-1);
+
+	sc->ctx->cap = cheri_getdefault();
 
 	bhyve_pci_init(sc->ctx);
 

@@ -33,13 +33,13 @@
 
 #include <sys/cdefs.h>
 #include <sys/malloc.h>
+#include <sys/cheri.h>
 
 #include <machine/frame.h>
+#include <machine/cpuregs.h>
 
 #include <mips/beri/beri_epw.h>
 #include <mips/beri/beripic.h>
-
-#include <machine/cpuregs.h>
 
 #include "mem.h"
 #include "inout.h"
@@ -157,6 +157,7 @@ void *
 paddr_guest2host(struct vmctx *ctx, uintptr_t gaddr, size_t len)
 {
 	uintptr_t addr;
+	void *result;
 
 #ifdef CONFIG_IOMMU
 	addr = gaddr;
@@ -167,5 +168,11 @@ paddr_guest2host(struct vmctx *ctx, uintptr_t gaddr, size_t len)
 	dprintf("%s: gaddr %lx, addr %lx, len %d\n",
 	    __func__, gaddr, addr, len);
 
-	return ((void *)addr);
+#ifdef __CHERI_PURE_CAPABILITY__
+	result = cheri_setoffset(ctx->cap, addr);
+#else
+	result = (void *)addr;
+#endif
+
+	return (result);
 }

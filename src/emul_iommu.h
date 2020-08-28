@@ -36,7 +36,6 @@
 
 struct iommu_softc {
 	int unit;
-	vm_offset_t *kernel_segmap;
 };
 
 void

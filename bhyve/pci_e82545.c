@@ -33,6 +33,7 @@
 #include <sys/param.h>
 #include <sys/endian.h>
 #include <sys/callout.h>
+#include <sys/cheri.h>
 
 #include <sys/errno.h>
 #include <sys/types.h>
@@ -1117,7 +1118,8 @@ e82545_iov_checksum(struct iovec *iov, int iovcnt, int off, int len)
 #if 0
 		s = e82545_buf_checksum(iov->iov_base + off, now);
 #else
-		s = e82545_buf_checksum((void *)((uint64_t)iov->iov_base + off), now);
+		s = e82545_buf_checksum(mdx_incoffset(iov->iov_base, off),
+		    now);
 #endif
 		sum += odd ? (s << 8) : s;
 		odd ^= (now & 1);
@@ -1369,7 +1371,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 #if 0
 			iov->iov_base += now;
 #else
-			iov->iov_base = (void *)((uint64_t)iov->iov_base + now);
+			iov->iov_base = mdx_incoffset(iov->iov_base, now);
 #endif
 			iov->iov_len -= now;
 			if (iov->iov_len == 0) {
@@ -1444,7 +1446,8 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 #if 0
 			tiov[tiovcnt].iov_base = iov[pv].iov_base + pvoff;
 #else
-			tiov[tiovcnt].iov_base = (void *)((uint64_t)iov[pv].iov_base + pvoff);
+			tiov[tiovcnt].iov_base = mdx_incoffset(iov[pv].iov_base,
+			    pvoff);
 #endif
 			tiov[tiovcnt++].iov_len = nnow;
 			if (pvoff + nnow == iov[pv].iov_len) {

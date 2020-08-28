@@ -34,6 +34,7 @@
 #include <sys/cdefs.h>
 #include <sys/systm.h>
 #include <sys/endian.h>
+#include <sys/cheri.h>
 
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
@@ -57,7 +58,7 @@
 #define	dprintf(fmt, ...)
 #endif
 
-vm_offset_t *kernel_segmap;
+vm_offset_t kernel_segmap;
 
 void
 emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
@@ -98,7 +99,7 @@ emul_iommu(const struct emul_link *elink, struct epw_softc *epw_sc,
 		val &= ~MIPS_XKPHYS_CACHED_NC;
 		val |= MIPS_XKPHYS_UNCACHED;
 		printf("%s: segmap base %lx\n", __func__, val);
-		sc->kernel_segmap = kernel_segmap = (void *)val;
+		kernel_segmap = val;
 		__asm __volatile("sync;sync;sync");
 		break;
 	default:

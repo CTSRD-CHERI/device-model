@@ -44,6 +44,7 @@ struct vmctx {
 	size_t	highmem;
 	char	*baseaddr;
 	char	*name;
+	capability cap;
 };
 
 void *paddr_guest2host(struct vmctx *ctx, uintptr_t addr, size_t len);

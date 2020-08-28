@@ -36,6 +36,7 @@
 #include <sys/endian.h>
 #include <sys/thread.h>
 #include <sys/sem.h>
+#include <sys/cheri.h>
 
 #include <machine/cpuregs.h>
 #include <machine/cpufunc.h>
@@ -44,6 +45,8 @@
 #include <machine/cache_r4k.h>
 
 #include <mips/beri/beri_epw.h>
+#include <mips/beri/beripic.h>
+
 #include <dev/altera/msgdma/msgdma.h>
 #include <dev/altera/fifo/fifo.h>
 
@@ -66,6 +69,8 @@
 	 A_ONCHIP_FIFO_MEM_CORE_INTR_OVERFLOW	| \
 	 A_ONCHIP_FIFO_MEM_CORE_INTR_UNDERFLOW)
 
+extern struct mdx_device beripic0;
+
 static struct msgdma_desc *
 emul_msgdma_next_desc(struct msgdma_desc *desc0)
 {
@@ -74,7 +79,12 @@ emul_msgdma_next_desc(struct msgdma_desc *desc0)
 
 	addr = le32toh(desc0->next);
 	addr |= MIPS_XKPHYS_UNCACHED_BASE;
+
+#ifdef __CHERI_PURE_CAPABILITY__
+	desc = cheri_setoffset(cheri_getdefault(), addr);
+#else
 	desc = (struct msgdma_desc *)addr;
+#endif
 
 	return (desc);
 }
@@ -83,7 +93,7 @@ static void
 send_soft_irq(struct msgdma_softc *sc)
 {
 	struct msgdma_csr *csr;
-	uint64_t addr;
+	int irq;
 
 	dprintf("%s\n", __func__);
 
@@ -91,12 +101,12 @@ send_soft_irq(struct msgdma_softc *sc)
 	if ((csr->dma_control & CONTROL_GIEM) == 0)
 		return;
 
-	addr = BERIPIC0_IP_SET | MIPS_XKPHYS_UNCACHED_BASE;
-
 	if (sc->unit == 1)
-		*(volatile uint64_t *)(addr) = (1 << DM_MSGDMA1_INTR);
+		irq = DM_MSGDMA1_INTR;
 	else
-		*(volatile uint64_t *)(addr) = (1 << DM_MSGDMA0_INTR);
+		irq = DM_MSGDMA0_INTR;
+
+	beripic_ip_set(&beripic0, irq);
 }
 
 void
@@ -148,10 +158,14 @@ emul_msgdma_poll(struct msgdma_softc *sc)
 #endif
 
 		iov.iov_len = le32toh(desc->length);
-#ifdef CONFIG_IOMMU
-		iov.iov_base = (void *) (base);
+#ifndef CONFIG_IOMMU
+		base |= MIPS_XKPHYS_UNCACHED_BASE;
+#endif
+
+#ifdef __CHERI_PURE_CAPABILITY__
+		iov.iov_base = cheri_setoffset(cheri_getdefault(), base);
 #else
-		iov.iov_base = (void *) (base | MIPS_XKPHYS_UNCACHED_BASE);
+		iov.iov_base = (void *)base;
 #endif
 
 		__asm __volatile("sync;sync;sync");
@@ -192,7 +206,12 @@ emul_msgdma_poll_enable(struct msgdma_softc *sc)
 
 	addr = pf->pf_next_lo | MIPS_XKPHYS_UNCACHED_BASE;
 
+#ifdef __CHERI_PURE_CAPABILITY__
+	sc->cur_desc = cheri_setoffset(cheri_getdefault(), addr);
+#else
 	sc->cur_desc = (struct msgdma_desc *)addr;
+#endif
+
 	sc->poll_en = 1;
 
 	fifo_interrupts_disable(sc->fifo_sc);

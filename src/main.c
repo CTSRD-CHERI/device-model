@@ -37,6 +37,7 @@
 #include <sys/thread.h>
 #include <sys/systm.h>
 #include <sys/malloc.h>
+#include <sys/cheri.h>
 
 #include <machine/frame.h>
 #include <machine/cpuregs.h>
@@ -132,18 +133,22 @@ udelay(uint32_t usec)
 void
 board_init(void)
 {
-	uintptr_t malloc_base;
+	void *malloc_base;
 	int malloc_size;
-	uint64_t *addr;
 	uint32_t status;
 	capability cap;
+	capability base, window;
+	int error;
 
+#if 0
+	uint64_t *addr;
 	/* Debug */
 	addr = (uint64_t *)(DM_BASE + 0x800000);
 	*addr = 0x1515151515161617;
+#endif
 
-	cap = cheri_getdefault();
-	cap = cheri_setoffset(cap, MIPS_XKPHYS_UNCACHED_BASE + AJU1_BASE);
+	cap = cheri_setoffset(cheri_getdefault(),
+	    MIPS_XKPHYS_UNCACHED_BASE + AJU1_BASE);
 	cap = cheri_csetbounds(cap, 8);
 
 	aju_init(&aju_sc, cap);
@@ -190,7 +195,9 @@ board_init(void)
 	/* Enable IPI from FreeBSD. */
 	beripic_enable(&beripic1, 16, 0);
 
-	mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ);
+	error = mips_timer_init(&timer_sc, MIPS_DEFAULT_FREQ);
+	if (error)
+		panic("could not initialize mips timer, error %d\n", error);
 
 	status = mips_rd_status();
 	status |= MIPS_SR_IM_HARD(0);
@@ -205,7 +212,10 @@ board_init(void)
 	/* Select 4K page for TLB. */
 	mtc0(5, 0, 0);
 
-	epw_init(&epw_sc, EPW_BASE, EPW_WINDOW);
+	base = cheri_setoffset(cheri_getdefault(),
+	    EPW_BASE | MIPS_XKPHYS_UNCACHED_BASE);
+	window = cheri_setoffset(cap, EPW_WINDOW | MIPS_XKPHYS_UNCACHED_BASE);
+	epw_init(&epw_sc, base, window);
 
 	/* Enable EPW */
 	epw_control(&epw_sc, 1);
@@ -215,7 +225,12 @@ board_init(void)
 
 	printf("%s: Initializing malloc\n", __func__);
 	malloc_init();
-	malloc_base = DM_BASE + 0x01000000/2;
+#ifdef __CHERI_PURE_CAPABILITY__
+	malloc_base = cheri_setoffset(cheri_getdefault(),
+	    DM_BASE + 0x01000000 / 2);
+#else
+	malloc_base = (void *)(DM_BASE + 0x01000000/2);
+#endif
 	malloc_size = 0x01000000/2;
 	malloc_add_region((void *)malloc_base, malloc_size);
 }

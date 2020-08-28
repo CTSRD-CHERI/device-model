@@ -37,6 +37,7 @@
 #include <sys/queue.h>
 #include <sys/errno.h>
 #include <sys/stat.h>
+#include <sys/cheri.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -108,7 +109,7 @@ struct blockif_ctxt {
 	int			bc_isgeom;
 	int			bc_candelete;
 	int			bc_rdonly;
-	off_t			bc_base;
+	uint8_t			*bc_base;
 	off_t			bc_size;
 	int			bc_sectsz;
 	int			bc_psectsz;
@@ -236,7 +237,7 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 	err = 0;
 	switch (be->be_op) {
 	case BOP_READ:
-		addr = (uint8_t *)(bc->bc_base + br->br_offset);
+		addr = mdx_incoffset(bc->bc_base, br->br_offset);
 
 		for (i = 0; i < br->br_iovcnt; i++) {
 			dprintf("%s: read iov %d base %lx len %d, br->br_offset %d\n",
@@ -254,7 +255,7 @@ blockif_proc(struct blockif_ctxt *bc, struct blockif_elem *be, uint8_t *buf)
 			break;
 		}
 
-		addr = (uint8_t *)(bc->bc_base + br->br_offset);
+		addr = mdx_incoffset(bc->bc_base, br->br_offset);
 
 		for (i = 0; i < br->br_iovcnt; i++) {
 			dprintf("%s: write iov %d base %lx len %d, br->br_offset %d\n",
@@ -364,7 +365,13 @@ blockif_open(const char *optstr, const char *ident)
 	bc->bc_isgeom = geom;
 	bc->bc_candelete = candelete;
 	bc->bc_rdonly = ro;
-	bc->bc_base = DM_BASE + 0x03000000;
+
+#ifdef __CHERI_PURE_CAPABILITY__
+	bc->bc_base = cheri_setoffset(cheri_getdefault(), DM_BASE + 0x03000000);
+#else
+	bc->bc_base = (void *)(DM_BASE + 0x03000000);
+#endif
+
 	bc->bc_size = 0x0d000000;
 	bc->bc_sectsz = sectsz;
 	bc->bc_psectsz = psectsz;
@@ -512,7 +519,7 @@ blockif_cancel(struct blockif_ctxt *bc, struct blockif_req *breq)
 		do {
 			old_head = blockif_bse_head;
 			bse.bse_next = old_head;
-		} while (!atomic_cmpset_ptr((uintptr_t *)&blockif_bse_head,
+		} while (!atomic_cmpset_64((void *)&blockif_bse_head,
 					    (uintptr_t)old_head,
 					    (uintptr_t)&bse));
 

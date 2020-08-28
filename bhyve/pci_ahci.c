@@ -37,6 +37,7 @@
 #include <sys/uio.h>
 #include <sys/ata.h>
 #include <sys/endian.h>
+#include <sys/cheri.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -804,7 +805,7 @@ read_prdt(struct ahci_port *p, int slot, uint8_t *cfis,
 		sublen = MIN(len, dbcsz);
 		memcpy(to, ptr, sublen);
 		len -= sublen;
-		to = (void *)((uintptr_t)to + sublen);
+		to = mdx_incoffset(to, sublen);
 		prdt++;
 	}
 }
@@ -918,7 +919,7 @@ write_prdt(struct ahci_port *p, int slot, uint8_t *cfis,
 		sublen = MIN(len, dbcsz);
 		memcpy(ptr, from, sublen);
 		len -= sublen;
-		from = (void *)((uintptr_t)from + sublen);
+		from = mdx_incoffset(from, sublen);
 		prdt++;
 	}
 	hdr->prdbc = size - len;
