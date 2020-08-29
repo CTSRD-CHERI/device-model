@@ -16,9 +16,6 @@ OSDIR =		mdepx
 LDSCRIPT_TPL =	${CURDIR}/ldscript.tpl
 LDSCRIPT =	${OBJDIR}/ldscript
 
-LDSCRIPT_PURE_TPL =	${CURDIR}/ldscript_pure.tpl
-LDSCRIPT_PURE =		${OBJDIR}/ldscript_pure
-
 DM_BASE_UNCACHED =	0xffffffffb0000000
 DM_BASE_CACHED =	0xffffffff90000000
 DM_BASE ?=		${DM_BASE_CACHED}
@@ -45,16 +42,13 @@ all:	${LDSCRIPT}
 	@${OBJCOPY} -O binary obj/${APP}.elf obj/${APP}.bin
 	@${SIZE} obj/${APP}.elf
 
-pure:	${LDSCRIPT_PURE}
+pure:	${LDSCRIPT}
 	@python3 -B ${OSDIR}/tools/emitter.py mdepx-pure.conf
 	@${OBJCOPY} -O binary obj/${APP}.elf obj/${APP}.bin
 	@${SIZE} obj/${APP}.elf
 
 ${LDSCRIPT}:
 	@sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_TPL} > ${LDSCRIPT}
-
-${LDSCRIPT_PURE}:
-	@sed s#__DM_BASE__#${DM_BASE}#g ${LDSCRIPT_PURE_TPL} > ${LDSCRIPT_PURE}
 
 llvm-objdump:
 	@${OBJDUMP} -d ${OBJDIR}/${APP}.elf | less
