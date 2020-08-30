@@ -5,12 +5,12 @@ SECTIONS
 {
 	. = __DM_BASE__;
 	.start . : {
-		*start(.text)
+		*start*.o(.text)
 	}
 
 	. = (__DM_BASE__ + 0x1000);
 	.exception . : {
-		*exception(.text)
+		*exception*.o(.text)
 	}
 
 	. = (__DM_BASE__ + 0x2000);
