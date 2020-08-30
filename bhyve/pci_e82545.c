@@ -1669,6 +1669,7 @@ e82545_setup_fifo(struct altera_fifo_softc *fifo_tx,
 	if (td == NULL)
 		return (-1);   
 
+	md_set_ddc(td, cheri_getdefault());
 	mdx_sched_add(td);
 
 	printf("%s: Enabling RX interrupts\n", __func__);

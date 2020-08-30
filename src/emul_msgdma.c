@@ -408,6 +408,7 @@ emul_msgdma_rx_init(struct msgdma_softc *sc)
 	if (td == NULL)
 		return (-1);
 
+	md_set_ddc(td, cheri_getdefault());
 	mdx_sched_add(td);
 
 	return (0);
