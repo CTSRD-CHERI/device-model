@@ -38,12 +38,12 @@ export CFLAGS = ${DM_FLAGS} -DDM_BASE=${DM_BASE}
 export AFLAGS = ${CFLAGS}
 
 all:	${LDSCRIPT}
-	@python3 -B ${OSDIR}/tools/emitter.py mdepx.conf
+	@python3 -B ${OSDIR}/tools/emitter.py -j mdepx.conf
 	@${OBJCOPY} -O binary obj/${APP}.elf obj/${APP}.bin
 	@${SIZE} obj/${APP}.elf
 
 pure:	${LDSCRIPT}
-	@python3 -B ${OSDIR}/tools/emitter.py mdepx-pure.conf
+	@python3 -B ${OSDIR}/tools/emitter.py -j mdepx-pure.conf
 	@${OBJCOPY} -O binary obj/${APP}.elf obj/${APP}.bin
 	@${SIZE} obj/${APP}.elf
 
