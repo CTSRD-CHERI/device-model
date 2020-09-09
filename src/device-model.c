@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2018 Ruslan Bukin <br@bsdpad.com>
+ * Copyright (c) 2018-2020 Ruslan Bukin <br@bsdpad.com>
  * All rights reserved.
  *
  * This software was developed by SRI International and the University of
@@ -72,7 +72,7 @@ struct altera_fifo_softc fifo1_sc;
 struct pci_softc pci0_sc;
 extern struct e82545_softc *e82545_sc;
 
-int req_count;
+static int req_count;
 
 const struct fwd_link fwd_map[DM_FWD_NDEVICES] = {
 	{ 0x0000, 0x20, MSGDMA0_BASE_CSR,  fwd_request },	/* Control Status Register */
