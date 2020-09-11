@@ -10,9 +10,18 @@ CHERI CPU used by this application is synthesized on Altera FPGA and prototyped 
 
 This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI processor.
 
-### Build FreeBSD with a beri_manager driver and bm (BERI Manager) application
+### Diagrams ###
 
-    $ git clone -b dma https://github.com/bukinr/freebsd-head
+![alt text](https://raw.githubusercontent.com/CTSRD-CHERI/device-model/master/diagrams/main.jpg)
+
+### Build CheriBSD with a beri_manager driver and bm (BERI Manager) application
+
+See the device-model branch of CheriBSD repository:
+https://github.com/CTSRD-CHERI/cheribsd
+
+Note: cheribuild is required to build this project.
+
+    $ git clone -b device-model https://github.com/CTSRD-CHERI/cheribsd
     $ make -j4 TARGET=mips TARGET_ARCH=mips64 buildworld
     $ make -j4 TARGET=mips TARGET_ARCH=mips64 KERNCONF=BERI_DE4_USBROOT buildkernel
 
