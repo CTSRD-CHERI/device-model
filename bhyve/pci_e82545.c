@@ -134,11 +134,16 @@
 /* This is an arbitrary number.  There is no hard limit on the chip. */
 #define I82545_MAX_TXSEGS	64
 
+#ifndef __CHERI_PURE_CAPABILITY__
+#if defined(E1000_DESC_CAP)
+#error Implement me: capability base in descriptors for Hybrid ABI
+#endif
+#endif
+
 /* Legacy receive descriptor */
 struct e1000_rx_desc {
 #if defined(E1000_DESC_CAP)
-	uint64_t buffer_addr_lo;
-	uint64_t buffer_addr_hi;
+	void * __capability buffer_addr;
 #else
 	uint64_t buffer_addr;	/* Address of the descriptor's data buffer */
 #endif
@@ -163,8 +168,7 @@ struct e1000_rx_desc {
 /* Legacy transmit descriptor */
 struct e1000_tx_desc {
 #if defined(E1000_DESC_CAP)
-	uint64_t buffer_addr_lo;
-	uint64_t buffer_addr_hi;
+	void * __capability buffer_addr;
 #else
 	uint64_t buffer_addr;   /* Address of the descriptor's data buffer */
 #endif
@@ -218,8 +222,7 @@ struct e1000_context_desc {
 /* Data descriptor */
 struct e1000_data_desc {
 #if defined(E1000_DESC_CAP)
-	uint64_t buffer_addr_lo;
-	uint64_t buffer_addr_hi;
+	void * __capability buffer_addr;
 #else
 	uint64_t buffer_addr;  /* Address of the descriptor's buffer address */
 #endif
@@ -971,8 +974,8 @@ e82545_tap_callback(int fd, enum ev_type type, void *param)
 		for (i = 0; i < maxpktdesc; i++) {
 			rxd = &sc->esc_rxdesc[(head + i) % size];
 #if defined(E1000_DESC_CAP)
-			vec[i].iov_base = paddr_guest2host(sc->esc_ctx,
-			    le64toh(rxd->buffer_addr_lo), bufsz);
+			vec[i].iov_base = cap_guest2host(sc->esc_ctx,
+			    rxd->buffer_addr, bufsz);
 #else
 			vec[i].iov_base = paddr_guest2host(sc->esc_ctx,
 			    le64toh(rxd->buffer_addr), bufsz);
@@ -1230,7 +1233,7 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 				DPRINTF("tx ctxt desc idx %d: %016jx "
 				    "%08x%08x\r\n",
 #if defined(E1000_DESC_CAP)
-				    head, le64toh(dsc->td.buffer_addr_lo),
+				    head, dsc->td.buffer_addr,
 #else
 				    head, le64toh(dsc->td.buffer_addr),
 #endif
@@ -1274,9 +1277,9 @@ e82545_transmit(struct e82545_softc *sc, uint16_t head, uint16_t tail,
 			tlen += len;
 			if (iovcnt < I82545_MAX_TXSEGS) {
 #if defined(E1000_DESC_CAP)
-				iov[iovcnt].iov_base = paddr_guest2host(
+				iov[iovcnt].iov_base = cap_guest2host(
 				    sc->esc_ctx,
-				    le64toh(dsc->td.buffer_addr_lo), len);
+				    dsc->td.buffer_addr, len);
 #else
 				iov[iovcnt].iov_base = paddr_guest2host(
 				    sc->esc_ctx,
