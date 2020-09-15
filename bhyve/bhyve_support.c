@@ -176,3 +176,10 @@ paddr_guest2host(struct vmctx *ctx, uintptr_t gaddr, size_t len)
 
 	return (result);
 }
+
+void * __capability
+cap_guest2host(struct vmctx *ctx, void * __capability gaddr, size_t len)
+{
+
+	return (gaddr);
+}
