@@ -222,8 +222,8 @@ access_memory(struct vmctx *ctx, int vcpu, uint64_t paddr, mem_cb_t *cb,
 }
 
 static int
-emulate_mem_cb(struct vmctx *ctx, int vcpu, uint64_t paddr, struct mem_range *mr,
-    void *arg)
+emulate_mem_cb(struct vmctx *ctx, int vcpu, uint64_t paddr,
+    struct mem_range *mr, void *arg)
 {
 	struct emulate_mem_args *ema;
 	int error;
