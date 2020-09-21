@@ -16,6 +16,8 @@ This is bare-metal software, i.e. it runs on a dedicated CPU core of CHERI proce
 
 ![alt text](https://raw.githubusercontent.com/CTSRD-CHERI/device-model/master/diagrams/map.jpg)
 
+![alt text](https://raw.githubusercontent.com/CTSRD-CHERI/device-model/master/diagrams/pci_mem.jpg)
+
 ### Build CheriBSD with a beri_manager driver and bm (BERI Manager) application
 
 See the device-model branch of CheriBSD repository:
